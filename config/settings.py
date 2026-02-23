@@ -11,7 +11,7 @@ env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env(BASE_DIR / '.env')
 
 SECRET_KEY = env('SECRET_KEY')
-DEBUG = True
+DEBUG = env('DEBUG')
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
 
 DJANGO_APPS = [
@@ -24,8 +24,8 @@ DJANGO_APPS = [
 ]
 
 LOCAL_APPS = [
-    'apps.users',
     'apps.core',
+    'apps.users',
     'apps.clients',
     'apps.products',
     'apps.tables',
@@ -34,6 +34,7 @@ LOCAL_APPS = [
     'apps.machines',
     'apps.movements',
     'apps.stock_entries',
+    'apps.receivables',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS

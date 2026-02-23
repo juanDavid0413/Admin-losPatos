@@ -5,30 +5,11 @@ from decimal import Decimal
 
 
 class ProductAccount(models.Model):
-    """
-    Cuentas solo de productos — sin mesa, sin tiempo.
-    Regla del documento: 'Nunca mezclar con sesiones de mesa.'
-    Pueden permanecer abiertas.
-    """
-    client = models.ForeignKey(
-        'clients.Client',
-        on_delete=models.PROTECT,
-        related_name='product_accounts',
-        verbose_name='Cliente'
-    )
-    worker = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name='product_accounts',
-        verbose_name='Trabajador'
-    )
+    client = models.ForeignKey('clients.Client', on_delete=models.PROTECT, related_name='product_accounts', verbose_name='Cliente')
+    worker = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='product_accounts', verbose_name='Trabajador')
     opened_at = models.DateTimeField(default=timezone.now, verbose_name='Apertura')
     closed_at = models.DateTimeField(null=True, blank=True, verbose_name='Cierre')
-    grand_total = models.DecimalField(
-        max_digits=10, decimal_places=2,
-        default=Decimal('0'),
-        verbose_name='Total'
-    )
+    grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'), verbose_name='Total')
     notes = models.TextField(blank=True, verbose_name='Notas')
 
     class Meta:
@@ -45,45 +26,42 @@ class ProductAccount(models.Model):
         return self.closed_at is None
 
     def calculate_total(self):
-        return sum(
-            item.unit_price * item.quantity
-            for item in self.account_products.all()
-        )
+        return sum(item.unit_price * item.quantity for item in self.account_products.all())
 
-    def close(self, worker=None):
+    def close(self, worker, paid=True):
         from apps.movements.models import Movement
         from apps.core.constants import MovementType, MovementSource
+        from apps.receivables.models import Receivable
 
         if not self.is_open:
-            raise ValueError('Esta cuenta ya está cerrada.')
+            raise ValueError('Esta cuenta ya esta cerrada.')
 
         self.closed_at = timezone.now()
-        self.grand_total = Decimal(self.calculate_total())
+        self.grand_total = Decimal(str(self.calculate_total()))
         self.save()
 
-        Movement.objects.create(
-            movement_type=MovementType.INCOME,
-            source=MovementSource.PRODUCT_ACCOUNT,
-            amount=self.grand_total,
-            description=f'Cierre cuenta productos — Cliente: {self.client.name}',
-            product_account=self,
-            worker=worker or self.worker,
-        )
+        if paid:
+            Movement.objects.create(
+                movement_type=MovementType.INCOME,
+                source=MovementSource.PRODUCT_ACCOUNT,
+                amount=self.grand_total,
+                description=f'Cierre cuenta productos — {self.client.name}',
+                product_account=self,
+                worker=worker,
+            )
+        else:
+            Receivable.objects.create(
+                source=Receivable.SOURCE_ACCOUNT,
+                product_account=self,
+                client=self.client,
+                amount=self.grand_total,
+                notes=f'Cuenta productos — {self.client.name}',
+            )
 
 
 class AccountProduct(models.Model):
-    """Producto dentro de una cuenta de productos."""
-    account = models.ForeignKey(
-        ProductAccount,
-        on_delete=models.CASCADE,
-        related_name='account_products',
-        verbose_name='Cuenta'
-    )
-    product = models.ForeignKey(
-        'products.Product',
-        on_delete=models.PROTECT,
-        verbose_name='Producto'
-    )
+    account = models.ForeignKey(ProductAccount, on_delete=models.CASCADE, related_name='account_products', verbose_name='Cuenta')
+    product = models.ForeignKey('products.Product', on_delete=models.PROTECT, verbose_name='Producto')
     quantity = models.PositiveIntegerField(default=1, verbose_name='Cantidad')
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio unitario')
 

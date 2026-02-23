@@ -4,13 +4,46 @@
 
 {% block header_actions %}
 {% if session.is_open %}
-<form method="post" action="{% url 'table_sessions:close' pk=session.pk %}"
-      onsubmit="return confirm('¿Cerrar sesión y registrar el cobro?')">
-  {% csrf_token %}
-  <button type="submit" class="bg-red-600 hover:bg-red-500 text-white text-sm font-semibold px-5 py-2 rounded-lg">
-    Cerrar y Cobrar
-  </button>
-</form>
+<button onclick="document.getElementById('payModal').classList.remove('hidden')"
+  class="bg-red-600 hover:bg-red-500 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors">
+  Cerrar Sesion
+</button>
+
+<!-- Modal pago -->
+<div id="payModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+  <div class="bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-sm w-full shadow-2xl">
+    <h3 class="text-lg font-bold text-white mb-2">Cerrar Sesion</h3>
+    <p class="text-gray-400 text-sm mb-6">
+      Total: <span class="text-green-400 font-bold text-xl" id="modalTotal">$0</span><br>
+      <span class="text-xs text-gray-500">¿El cliente pago en este momento?</span>
+    </p>
+    <div class="space-y-3">
+      <!-- Pago inmediato -->
+      <form method="post" action="{% url 'table_sessions:close' pk=session.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="paid" value="1">
+        <button type="submit"
+          class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+          <span class="text-xl">💵</span> Si, pago ahora
+        </button>
+      </form>
+      <!-- Queda debiendo -->
+      <form method="post" action="{% url 'table_sessions:close' pk=session.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="paid" value="0">
+        <button type="submit"
+          class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+          <span class="text-xl">📋</span> Queda debiendo
+        </button>
+      </form>
+      <!-- Cancelar -->
+      <button onclick="document.getElementById('payModal').classList.add('hidden')"
+        class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium py-2.5 rounded-xl transition-colors">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
 {% endif %}
 {% endblock %}
 
@@ -130,6 +163,15 @@
 </div>
 
 <!-- El timestamp en epoch segundos evita problemas de zona horaria y formato -->
+<script>
+function updateModalTotal() {
+  const grandEl = document.getElementById('grandTotal');
+  const modalEl = document.getElementById('modalTotal');
+  if (grandEl && modalEl) modalEl.textContent = grandEl.textContent;
+}
+setInterval(updateModalTotal, 500);
+updateModalTotal();
+</script>
 <script>
 (function() {
   const isOpen = {{ session.is_open|yesno:"true,false" }};

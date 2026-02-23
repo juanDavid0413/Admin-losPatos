@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block title %}Cuentas por Cobrar{% endblock %}
+{% block page_title %}Cuentas por Cobrar{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Banner resumen -->
+  {% if clients_debts %}
+  <div class="bg-yellow-900/20 border border-yellow-800/50 rounded-xl p-5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">⚠️</span>
+      <div>
+        <p class="font-bold text-yellow-300">{{ clients_debts|length }} cliente{% if clients_debts|length != 1 %}s{% endif %} con deuda pendiente</p>
+        <p class="text-sm text-yellow-600">Total adeudado</p>
+      </div>
+    </div>
+    <p class="text-3xl font-bold text-yellow-300">${{ grand_total_pending|floatformat:0 }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Deudas agrupadas por cliente -->
+  <div>
+    <div class="flex items-center gap-3 mb-3">
+      <h2 class="font-bold text-white">Pendientes de cobro</h2>
+      <span class="px-2.5 py-0.5 bg-yellow-900/60 text-yellow-400 border border-yellow-800 rounded-full text-xs font-bold">{{ clients_debts|length }}</span>
+    </div>
+
+    {% if clients_debts %}
+    <div class="space-y-4">
+      {% for cd in clients_debts %}
+      <div class="bg-gray-900 border border-yellow-900/30 rounded-xl overflow-hidden">
+
+        <!-- Header del cliente -->
+        <div class="px-5 py-4 bg-gray-800/40 border-b border-gray-800 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-yellow-700/40 flex items-center justify-center text-yellow-300 font-bold text-sm">
+              {{ cd.client.name|first|upper }}
+            </div>
+            <div>
+              <p class="font-bold text-white">{{ cd.client.name }}</p>
+              <p class="text-xs text-gray-500">{{ cd.debts|length }} deuda{% if cd.debts|length != 1 %}s{% endif %} — Total original: ${{ cd.total|floatformat:0 }}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-xs text-gray-500">Saldo pendiente</p>
+            <p class="text-2xl font-bold text-yellow-300">${{ cd.balance|floatformat:0 }}</p>
+          </div>
+        </div>
+
+        <!-- Deudas discriminadas -->
+        <div class="divide-y divide-gray-800/50">
+          {% for debt in cd.debts %}
+          <div class="px-5 py-4">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="px-2 py-0.5 rounded text-xs font-bold
+                    {% if debt.source == 'sesion' %}bg-blue-900/50 text-blue-400{% else %}bg-purple-900/50 text-purple-400{% endif %}">
+                    {% if debt.source == 'sesion' %}🎱 Mesa{% else %}🧾 Cuenta{% endif %}
+                  </span>
+                  {% if debt.table_session %}
+                  <span class="text-xs text-gray-500">{{ debt.table_session.table }}</span>
+                  {% endif %}
+                  <span class="text-xs text-gray-600">{{ debt.created_at|date:"d/m/Y H:i" }}</span>
+                </div>
+
+                <!-- Progreso de pago -->
+                <div class="mb-2">
+                  <div class="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Abonado: <span class="text-green-400 font-medium">${{ debt.amount_paid|floatformat:0 }}</span></span>
+                    <span>Pendiente: <span class="text-yellow-400 font-medium">${{ debt.balance|floatformat:0 }}</span></span>
+                    <span>Total: ${{ debt.amount|floatformat:0 }}</span>
+                  </div>
+                  <div class="w-full bg-gray-700 rounded-full h-1.5">
+                    {% if debt.amount > 0 %}
+                    <div class="bg-green-500 h-1.5 rounded-full transition-all"
+                         style="width: {{ debt.amount_paid|floatformat:0 }}00 / {{ debt.amount|floatformat:0 }}00 * 100{% if debt.amount_paid == 0 %}; width: 0%{% endif %}">
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- Historial de abonos -->
+                {% if debt.payments.all %}
+                <div class="flex flex-wrap gap-1 mb-2">
+                  {% for pay in debt.payments.all %}
+                  <span class="px-2 py-0.5 bg-green-900/30 border border-green-800/50 rounded text-xs text-green-400">
+                    +${{ pay.amount|floatformat:0 }} {{ pay.created_at|date:"d/m" }}
+                  </span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if debt.notes %}
+                <p class="text-xs text-gray-600">{{ debt.notes }}</p>
+                {% endif %}
+              </div>
+
+              <!-- Formulario de abono -->
+              <div class="shrink-0">
+                <form method="post" action="{% url 'receivables:apply_payment' pk=debt.pk %}"
+                      onsubmit="return validateAbono(this, {{ debt.balance|floatformat:0 }})">
+                  {% csrf_token %}
+                  <div class="flex gap-2 items-center">
+                    <div class="relative">
+                      <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                      <input type="number" name="amount" step="0.01" min="1" max="{{ debt.balance }}"
+                        placeholder="{{ debt.balance|floatformat:0 }}"
+                        class="w-28 pl-6 pr-2 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-right">
+                    </div>
+                    <button type="submit"
+                      class="bg-green-700 hover:bg-green-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors whitespace-nowrap">
+                      Abonar
+                    </button>
+                  </div>
+                  <button type="button"
+                    onclick="document.querySelector('[name=amount]', this.closest('form')).value='{{ debt.balance|floatformat:0 }}'; this.closest('form').submit();"
+                    class="mt-1 w-full text-center text-xs text-yellow-500 hover:text-yellow-300 hover:underline">
+                    Pagar total (${{ debt.balance|floatformat:0 }})
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="bg-gray-900 border border-gray-800 rounded-xl py-14 text-center">
+      <p class="text-5xl mb-3">✅</p>
+      <p class="font-bold text-white">Sin cuentas pendientes</p>
+      <p class="text-gray-500 text-sm mt-1">Todos los clientes estan al dia</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Historial de cobros recientes -->
+  {% if paid_recently %}
+  <div>
+    <div class="flex items-center gap-3 mb-3">
+      <h2 class="font-bold text-gray-400">Cobros recientes</h2>
+      <span class="px-2.5 py-0.5 bg-gray-800 text-gray-500 rounded-full text-xs">ultimas 20</span>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-gray-500 uppercase bg-gray-800/60">
+          <tr>
+            <th class="px-5 py-3 text-left">Cliente</th>
+            <th class="px-5 py-3 text-left">Origen</th>
+            <th class="px-5 py-3 text-left">Fecha deuda</th>
+            <th class="px-5 py-3 text-left">Fecha saldada</th>
+            <th class="px-5 py-3 text-left">Cobrado por</th>
+            <th class="px-5 py-3 text-right">Total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for r in paid_recently %}
+          <tr class="hover:bg-gray-800/20 opacity-75 hover:opacity-100">
+            <td class="px-5 py-3 text-gray-300 font-medium">{{ r.client }}</td>
+            <td class="px-5 py-3 text-gray-500 text-xs">{{ r.get_source_display }}</td>
+            <td class="px-5 py-3 text-gray-500 text-xs">{{ r.created_at|date:"d/m/Y" }}</td>
+            <td class="px-5 py-3 text-green-500 text-xs">{{ r.paid_at|date:"d/m/Y H:i" }}</td>
+            <td class="px-5 py-3 text-gray-500 text-xs">{{ r.paid_by.get_full_name|default:r.paid_by.username|default:"—" }}</td>
+            <td class="px-5 py-3 text-right font-bold text-green-400">${{ r.amount|floatformat:0 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function validateAbono(form, maxBalance) {
+  const input = form.querySelector('[name=amount]');
+  const val = parseFloat(input.value);
+  if (!val || val <= 0) {
+    alert('Ingresa un monto valido.');
+    return false;
+  }
+  if (val > maxBalance) {
+    alert('El abono ($' + val + ') supera el saldo pendiente ($' + maxBalance + ').');
+    return false;
+  }
+  return confirm('Registrar abono de $' + val.toLocaleString('es-CO') + '?');
+}
+
+// Boton "Pagar total" arreglado
+document.querySelectorAll('[data-pay-full]').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const form = this.closest('form');
+    form.querySelector('[name=amount]').value = this.dataset.payFull;
+    form.submit();
+  });
+});
+</script>
+{% endblock %}
