@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-gray-950">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Billar Los Patos{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:'#f0fdf4', 500:'#22c55e', 600:'#16a34a', 700:'#15803d', 900:'#14532d' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+  [x-cloak] { display: none !important; }
+
+  .sidebar-link {
+    @apply flex w-full items-center gap-3 px-4 py-2.5 rounded-lg
+           text-gray-400 hover:bg-gray-800 hover:text-white
+           transition-colors text-sm font-medium;
+  }
+
+  .sidebar-link.active {
+    @apply bg-green-900/40 text-green-400 border border-green-800/50;
+  }
+</style>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="h-full flex bg-gray-950 text-gray-100">
+
+{% if user.is_authenticated %}
+<!-- Sidebar -->
+<aside class="w-64 min-h-screen bg-gray-900 border-r border-gray-800 flex flex-col shrink-0">
+  <div class="p-5 border-b border-gray-800">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 bg-green-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">🎱</div>
+      <div>
+        <p class="font-bold text-white text-sm leading-tight">Billar Los Patos</p>
+        <p class="text-xs text-gray-500">Panel de control</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="flex flex-col flex-1 p-3 space-y-1 overflow-y-auto">
+    <p class="text-xs text-gray-600 uppercase tracking-widest px-4 pt-2 pb-1 font-semibold">Principal</p>
+    <a href="{% url 'core:dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <span>📊</span> Dashboard
+    </a>
+    <a href="{% url 'tables:list' %}" class="sidebar-link">
+      <span>🎱</span> Mesas
+    </a>
+    <a href="{% url 'table_sessions:list' %}" class="sidebar-link">
+      <span>⏱️</span> Sesiones
+    </a>
+    <a href="{% url 'product_accounts:list' %}" class="sidebar-link">
+      <span>🧾</span> Cuentas
+    </a>
+
+    <p class="text-xs text-gray-600 uppercase tracking-widest px-4 pt-4 pb-1 font-semibold">Gestión</p>
+    <a href="{% url 'clients:list' %}" class="sidebar-link">
+      <span>👤</span> Clientes
+    </a>
+    <a href="{% url 'products:list' %}" class="sidebar-link">
+      <span>📦</span> Productos
+    </a>
+    <a href="{% url 'machines:list' %}" class="sidebar-link">
+      <span>🎰</span> Máquinas
+    </a>
+    <a href="{% url 'stock_entries:list' %}" class="sidebar-link">
+      <span>📥</span> Entradas Stock
+    </a>
+
+    <p class="text-xs text-gray-600 uppercase tracking-widest px-4 pt-4 pb-1 font-semibold">Reportes</p>
+    <a href="{% url 'movements:list' %}" class="sidebar-link">
+      <span>📈</span> Movimientos
+    </a>
+
+    {% if user.is_admin %}
+    <p class="text-xs text-gray-600 uppercase tracking-widest px-4 pt-4 pb-1 font-semibold">Admin</p>
+    <a href="{% url 'users:list' %}" class="sidebar-link">
+      <span>🔐</span> Usuarios
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="p-3 border-t border-gray-800">
+    <div class="flex items-center gap-3 px-3 py-2">
+      <div class="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-sm font-bold">
+        {{ user.username|first|upper }}
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-white truncate">{{ user.get_full_name|default:user.username }}</p>
+        <p class="text-xs text-gray-500">{{ user.get_role_display }}</p>
+      </div>
+      <form method="post" action="{% url 'users:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="text-gray-500 hover:text-red-400 transition-colors text-xs cursor-pointer bg-transparent border-none p-0">Salir</button>
+      </form>
+    </div>
+  </div>
+</aside>
+{% endif %}
+
+<!-- Main content -->
+<main class="flex-1 flex flex-col min-h-screen overflow-auto">
+
+  <!-- Top bar -->
+  {% if user.is_authenticated %}
+  <header class="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between shrink-0">
+    <h1 class="text-lg font-semibold text-white">{% block page_title %}{% endblock %}</h1>
+    <div class="flex items-center gap-3">
+      {% block header_actions %}{% endblock %}
+    </div>
+  </header>
+  {% endif %}
+
+  <!-- Mensajes Django -->
+  {% if messages %}
+  <div class="px-6 pt-4 space-y-2">
+    {% for message in messages %}
+    <div class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium
+      {% if message.tags == 'success' %}bg-green-900/50 border border-green-700 text-green-300
+      {% elif message.tags == 'error' %}bg-red-900/50 border border-red-700 text-red-300
+      {% else %}bg-blue-900/50 border border-blue-700 text-blue-300{% endif %}">
+      {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% else %}ℹ️{% endif %}
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Page content -->
+  <div class="flex-1 p-6">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block title %}Sesión — {{ session.table }}{% endblock %}
+{% block page_title %}Sesión: {{ session.table }}{% endblock %}
+
+{% block header_actions %}
+{% if session.is_open %}
+<form method="post" action="{% url 'table_sessions:close' pk=session.pk %}"
+      onsubmit="return confirm('¿Cerrar sesión y registrar el cobro?')">
+  {% csrf_token %}
+  <button type="submit" class="bg-red-600 hover:bg-red-500 text-white text-sm font-semibold px-5 py-2 rounded-lg">
+    Cerrar y Cobrar
+  </button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-4">
+
+    <!-- Cronómetro -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+      <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">Tiempo transcurrido</p>
+      <div id="timer" class="text-6xl font-mono font-bold text-green-400 tracking-tight">00:00:00</div>
+      <p class="text-sm text-gray-600 mt-2">Inicio: {{ session.opened_at|date:"d/m/Y H:i" }}</p>
+      {% if not session.is_open %}
+      <p class="text-xs text-yellow-500 mt-1">Sesión cerrada — {{ session.closed_at|date:"d/m/Y H:i" }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 grid grid-cols-3 gap-4 text-center">
+      <div><p class="text-xs text-gray-500 mb-1">Mesa</p><p class="font-bold text-white">{{ session.table }}</p></div>
+      <div><p class="text-xs text-gray-500 mb-1">Cliente</p><p class="font-bold text-white">{{ session.client }}</p></div>
+      <div><p class="text-xs text-gray-500 mb-1">Trabajador</p><p class="font-bold text-white">{{ session.worker.get_full_name|default:session.worker.username }}</p></div>
+    </div>
+
+    <!-- Agregar producto -->
+    {% if session.is_open %}
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h3 class="font-semibold text-white mb-4">➕ Agregar Producto</h3>
+      <form method="post" action="{% url 'table_sessions:add_product' pk=session.pk %}" class="flex gap-3 flex-wrap">
+        {% csrf_token %}
+        <select name="product" required class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
+          <option value="">Seleccionar producto...</option>
+          {% for p in product_form.product.field.queryset %}
+          <option value="{{ p.pk }}">{{ p.name }} — ${{ p.sale_price }} (stock: {{ p.stock }})</option>
+          {% endfor %}
+        </select>
+        <input type="number" name="quantity" value="1" min="1" class="w-20 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm text-center">
+        <button type="submit" class="bg-green-700 hover:bg-green-600 text-white text-sm font-semibold px-5 py-2 rounded-lg">Agregar</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Tabla productos -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-800"><h3 class="font-semibold text-white">Productos consumidos</h3></div>
+      {% if products %}
+      <table class="w-full text-sm">
+        <thead class="text-xs text-gray-500 uppercase bg-gray-800/50">
+          <tr>
+            <th class="px-5 py-3 text-left">Producto</th>
+            <th class="px-5 py-3 text-right">Cant.</th>
+            <th class="px-5 py-3 text-right">P. Unit.</th>
+            <th class="px-5 py-3 text-right">Subtotal</th>
+            {% if session.is_open %}<th class="px-5 py-3"></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for item in products %}
+          <tr class="hover:bg-gray-800/30">
+            <td class="px-5 py-3 text-gray-300">{{ item.product.name }}</td>
+            <td class="px-5 py-3 text-right text-gray-400">{{ item.quantity }}</td>
+            <td class="px-5 py-3 text-right text-gray-400">${{ item.unit_price }}</td>
+            <td class="px-5 py-3 text-right font-medium text-white">${{ item.subtotal }}</td>
+            {% if session.is_open %}
+            <td class="px-3 py-3 text-right">
+              <form method="post" action="{% url 'table_sessions:remove_product' pk=session.pk item_pk=item.pk %}" onsubmit="return confirm('¿Eliminar?')">
+                {% csrf_token %}
+                <button type="submit" class="text-red-500 hover:text-red-400 text-xs font-medium px-2 py-1 rounded hover:bg-red-900/20">✕</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="px-5 py-8 text-center text-gray-600 text-sm">Sin productos agregados aún</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Totales -->
+  <div class="space-y-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h3 class="font-semibold text-white mb-4">💰 Totales en tiempo real</h3>
+      <div class="space-y-3">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-400">Tarifa/hora</span>
+          <span class="text-white">${{ session.table.hourly_rate|floatformat:0 }}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-400">Costo tiempo</span>
+          <span class="text-green-400 font-mono" id="timeCost">$0</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-400">Productos</span>
+          <span class="text-blue-400 font-mono" id="productsCostDisplay">$0</span>
+        </div>
+        <div class="border-t border-gray-700 pt-3 flex justify-between font-bold">
+          <span class="text-white">Total estimado</span>
+          <span class="text-green-300 text-lg font-mono" id="grandTotal">$0</span>
+        </div>
+      </div>
+    </div>
+
+    {% if not session.is_open %}
+    <div class="bg-green-900/30 border border-green-800 rounded-xl p-5">
+      <p class="text-xs text-green-500 uppercase tracking-widest mb-3">Sesión cerrada</p>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-gray-400">Tiempo</span><span>${{ session.time_total|floatformat:0 }}</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">Productos</span><span>${{ session.products_total|floatformat:0 }}</span></div>
+        <div class="flex justify-between font-bold text-green-300 text-lg"><span>Total cobrado</span><span>${{ session.grand_total|floatformat:0 }}</span></div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- El timestamp en epoch segundos evita problemas de zona horaria y formato -->
+<script>
+(function() {
+  const isOpen = {{ session.is_open|yesno:"true,false" }};
+  const minuteRate = parseFloat("{{ session.table.minute_rate }}") || 0;
+  const productsCost = parseFloat("{{ products_cost|default:0 }}") || 0;
+
+  // Usamos epoch (segundos desde 1970) para evitar problemas de formato/timezone
+  const openedAtEpoch = {{ session.opened_at|date:"U" }};  // segundos Unix
+  const openedAt = new Date(openedAtEpoch * 1000);
+
+  function pad(n) { return String(Math.floor(n)).padStart(2, '0'); }
+  function fmt(val) { return '$' + Math.floor(val).toLocaleString('es-CO'); }
+
+  // Mostrar costo de productos siempre
+  document.getElementById('productsCostDisplay').textContent = fmt(productsCost);
+
+  {% if not session.is_open %}
+  // Sesión cerrada: valores fijos del servidor
+  const closedAtEpoch = {{ session.closed_at|date:"U" }};
+  const elapsed = closedAtEpoch - openedAtEpoch;
+  const h = Math.floor(elapsed / 3600), m = Math.floor((elapsed % 3600) / 60), s = elapsed % 60;
+  document.getElementById('timer').textContent = pad(h)+':'+pad(m)+':'+pad(s);
+  document.getElementById('timeCost').textContent = '${{ session.time_total|floatformat:0 }}';
+  document.getElementById('productsCostDisplay').textContent = '${{ session.products_total|floatformat:0 }}';
+  document.getElementById('grandTotal').textContent = '${{ session.grand_total|floatformat:0 }}';
+  {% else %}
+  // Sesión abierta: cronómetro en vivo cada segundo
+  function tick() {
+    const nowEpoch = Math.floor(Date.now() / 1000);
+    const elapsed = nowEpoch - openedAtEpoch;
+
+    if (elapsed < 0) {
+      // Diferencia de zona horaria del servidor vs cliente — usar Date.now() relativo
+      return;
+    }
+
+    const h = Math.floor(elapsed / 3600);
+    const m = Math.floor((elapsed % 3600) / 60);
+    const s = elapsed % 60;
+    document.getElementById('timer').textContent = pad(h)+':'+pad(m)+':'+pad(s);
+
+    const minutes = elapsed / 60;
+    const timeCost = minuteRate * minutes;
+    const grand = timeCost + productsCost;
+    document.getElementById('timeCost').textContent = fmt(timeCost);
+    document.getElementById('grandTotal').textContent = fmt(grand);
+  }
+
+  tick();
+  setInterval(tick, 1000);
+  {% endif %}
+})();
+</script>
+{% endblock %}

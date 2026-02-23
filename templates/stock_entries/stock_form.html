@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Entrada de Stock{% endblock %}
+{% block page_title %}Nueva Entrada de Stock{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto space-y-4">
+
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-8">
+    <div class="mb-6">
+      <p class="text-sm text-gray-400">Selecciona el producto y la cantidad a ingresar. El stock se actualizará automáticamente.</p>
+    </div>
+
+    <form method="post" class="space-y-5" id="stockForm">
+      {% csrf_token %}
+
+      <!-- Producto -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1.5">Producto</label>
+        <select name="product" id="productSelect" required
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+          <option value="">Seleccionar producto...</option>
+          {% for p in form.product.field.queryset %}
+          <option value="{{ p.pk }}" data-stock="{{ p.stock }}">{{ p.name }} (stock actual: {{ p.stock }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Stock actual (solo lectura, informativo) -->
+      <div id="stockInfo" class="hidden bg-gray-800/60 border border-gray-700 rounded-lg p-4">
+        <div class="flex justify-between items-center text-sm">
+          <span class="text-gray-400">Stock actual:</span>
+          <span class="text-white font-bold" id="currentStock">—</span>
+        </div>
+        <div class="flex justify-between items-center text-sm mt-2">
+          <span class="text-gray-400">Stock después de entrada:</span>
+          <span class="text-green-400 font-bold text-lg" id="newStock">—</span>
+        </div>
+      </div>
+
+      <!-- Cantidad -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1.5">Cantidad a ingresar</label>
+        <input type="number" name="quantity" id="quantityInput" min="1" required value="1"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+      </div>
+
+      <!-- Notas -->
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1.5">Notas / Proveedor <span class="text-gray-600">(opcional)</span></label>
+        <textarea name="notes" rows="2" placeholder="Ej: Compra proveedor XYZ, factura #123..."
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+          class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-2.5 rounded-lg transition-colors">
+          📥 Registrar Entrada
+        </button>
+        <a href="{% url 'stock_entries:list' %}"
+          class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors text-sm font-medium text-center">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const select = document.getElementById('productSelect');
+const quantityInput = document.getElementById('quantityInput');
+const stockInfo = document.getElementById('stockInfo');
+const currentStockEl = document.getElementById('currentStock');
+const newStockEl = document.getElementById('newStock');
+
+function updatePreview() {
+  const option = select.options[select.selectedIndex];
+  if (!option || !option.value) {
+    stockInfo.classList.add('hidden');
+    return;
+  }
+  const currentStock = parseInt(option.dataset.stock) || 0;
+  const qty = parseInt(quantityInput.value) || 0;
+  stockInfo.classList.remove('hidden');
+  currentStockEl.textContent = currentStock;
+  newStockEl.textContent = currentStock + qty;
+}
+
+select.addEventListener('change', updatePreview);
+quantityInput.addEventListener('input', updatePreview);
+</script>
+{% endblock %}

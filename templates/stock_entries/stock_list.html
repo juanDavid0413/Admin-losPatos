@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Entradas de Stock{% endblock %}
+{% block page_title %}Entradas de Stock{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'stock_entries:create' %}"
+   class="bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+  + Nueva Entrada
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+  <!-- Stock actual de productos -->
+  <div class="lg:col-span-1">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden sticky top-6">
+      <div class="px-5 py-4 border-b border-gray-800">
+        <h3 class="font-semibold text-white text-sm">📦 Stock actual</h3>
+      </div>
+      <div class="divide-y divide-gray-800 max-h-[70vh] overflow-y-auto">
+        {% for p in products %}
+        <div class="px-4 py-3 flex justify-between items-center">
+          <span class="text-gray-300 text-sm truncate pr-2">{{ p.name }}</span>
+          <span class="text-sm font-bold shrink-0
+            {% if p.stock == 0 %}text-red-400
+            {% elif p.stock < 5 %}text-yellow-400
+            {% else %}text-green-400{% endif %}">
+            {{ p.stock }}
+          </span>
+        </div>
+        {% empty %}
+        <p class="px-5 py-4 text-gray-600 text-sm">Sin productos</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial de entradas -->
+  <div class="lg:col-span-3">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
+        <h3 class="font-semibold text-white">Historial de entradas</h3>
+        <span class="text-xs text-gray-500">Últimas 100 entradas</span>
+      </div>
+
+      {% if entries %}
+      <table class="w-full text-sm">
+        <thead class="text-xs text-gray-500 uppercase bg-gray-800/60">
+          <tr>
+            <th class="px-5 py-3 text-left">Fecha</th>
+            <th class="px-5 py-3 text-left">Producto</th>
+            <th class="px-5 py-3 text-right">Cantidad</th>
+            <th class="px-5 py-3 text-right">Antes</th>
+            <th class="px-5 py-3 text-right">Después</th>
+            <th class="px-5 py-3 text-left">Notas</th>
+            <th class="px-5 py-3 text-left">Registrado por</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for entry in entries %}
+          <tr class="hover:bg-gray-800/30 transition-colors">
+            <td class="px-5 py-3 text-gray-400 whitespace-nowrap text-xs">{{ entry.created_at|date:"d/m/Y H:i" }}</td>
+            <td class="px-5 py-3 font-medium text-white">{{ entry.product.name }}</td>
+            <td class="px-5 py-3 text-right">
+              <span class="text-green-400 font-bold">+{{ entry.quantity }}</span>
+            </td>
+            <td class="px-5 py-3 text-right text-gray-500">{{ entry.stock_before }}</td>
+            <td class="px-5 py-3 text-right text-green-300 font-medium">{{ entry.stock_after }}</td>
+            <td class="px-5 py-3 text-gray-400 text-xs max-w-xs truncate">{{ entry.notes|default:"—" }}</td>
+            <td class="px-5 py-3 text-gray-400 text-xs">{{ entry.worker.get_full_name|default:entry.worker.username|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="text-center py-16 text-gray-600">
+        <div class="text-5xl mb-3">📥</div>
+        <p class="font-medium">Sin entradas de stock registradas</p>
+        <a href="{% url 'stock_entries:create' %}" class="text-green-500 hover:underline text-sm mt-2 inline-block">Registrar primera entrada</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

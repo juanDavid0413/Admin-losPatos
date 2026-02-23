@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Mesas{% endblock %}
+{% block page_title %}Mesas{% endblock %}
+
+{% block header_actions %}
+{% if request.user.is_admin %}
+<a href="{% url 'tables:create' %}"
+   class="bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+  + Nueva Mesa
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  {% for table in tables %}
+  <div class="bg-gray-900 border rounded-xl p-5 transition-all
+    {% if table.status == 'libre' %}border-green-800/50 hover:border-green-600{% else %}border-yellow-800/50 hover:border-yellow-600{% endif %}">
+
+    <div class="flex items-start justify-between mb-3">
+      <div>
+        <p class="font-bold text-white text-lg">{{ table.name }}</p>
+        <p class="text-xs text-gray-500">${{ table.hourly_rate }}/hora</p>
+      </div>
+      <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide
+        {% if table.status == 'libre' %}bg-green-900/60 text-green-400 border border-green-800
+        {% else %}bg-yellow-900/60 text-yellow-400 border border-yellow-800{% endif %}">
+        {{ table.status }}
+      </span>
+    </div>
+
+    {% if table.is_free %}
+    <a href="{% url 'table_sessions:open' %}?table={{ table.pk }}"
+       class="block w-full text-center bg-green-700 hover:bg-green-600 text-white text-sm font-semibold py-2 rounded-lg transition-colors mt-4">
+      Abrir Sesión
+    </a>
+    {% else %}
+    <a href="{% url 'table_sessions:detail' pk=table.active_session.pk %}"
+       class="block w-full text-center bg-yellow-700 hover:bg-yellow-600 text-white text-sm font-semibold py-2 rounded-lg transition-colors mt-4">
+      Ver Sesión Activa
+    </a>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="col-span-full text-center py-16 text-gray-600">
+    <div class="text-5xl mb-3">🎱</div>
+    <p class="font-medium">No hay mesas registradas</p>
+    <a href="{% url 'tables:create' %}" class="text-green-500 hover:underline text-sm mt-2 inline-block">Crear primera mesa</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

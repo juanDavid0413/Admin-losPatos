@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Cuenta de Productos{% endblock %}
+{% block page_title %}Cuenta — {{ account.client }}{% endblock %}
+
+{% block header_actions %}
+{% if account.is_open %}
+<form method="post" action="{% url 'product_accounts:close' pk=account.pk %}">
+  {% csrf_token %}
+  <button type="submit" class="bg-red-600 hover:bg-red-500 text-white text-sm font-semibold px-5 py-2 rounded-lg">
+    Cerrar y Cobrar
+  </button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-4">
+
+    {% if account.is_open %}
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h3 class="font-semibold text-white mb-4">➕ Agregar Producto</h3>
+      <form method="post" action="{% url 'product_accounts:add_product' pk=account.pk %}" class="flex gap-3 flex-wrap">
+        {% csrf_token %}
+        <select name="product" required class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm">
+          <option value="">Seleccionar producto...</option>
+          {% for p in available_products %}
+          <option value="{{ p.pk }}">{{ p.name }} — ${{ p.sale_price }} (stock: {{ p.stock }})</option>
+          {% endfor %}
+        </select>
+        <input type="number" name="quantity" value="1" min="1" class="w-20 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm text-center">
+        <button type="submit" class="bg-green-700 hover:bg-green-600 text-white text-sm font-semibold px-5 py-2 rounded-lg">Agregar</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-800"><h3 class="font-semibold text-white">Productos</h3></div>
+      {% if products_list %}
+      <table class="w-full text-sm">
+        <thead class="text-xs text-gray-500 uppercase bg-gray-800/50">
+          <tr>
+            <th class="px-5 py-3 text-left">Producto</th>
+            <th class="px-5 py-3 text-right">Cant.</th>
+            <th class="px-5 py-3 text-right">Subtotal</th>
+            {% if account.is_open %}<th class="px-5 py-3"></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for item in products_list %}
+          <tr>
+            <td class="px-5 py-3 text-gray-300">{{ item.product.name }}</td>
+            <td class="px-5 py-3 text-right text-gray-400">{{ item.quantity }}</td>
+            <td class="px-5 py-3 text-right font-medium text-white">${{ item.unit_price|floatformat:0 }}</td>
+            {% if account.is_open %}
+            <td class="px-3 py-3 text-right">
+              <form method="post" action="{% url 'product_accounts:remove_product' pk=account.pk item_pk=item.pk %}" onsubmit="return confirm('¿Eliminar {{ item.product.name }}?')">
+                {% csrf_token %}
+                <button type="submit" class="text-red-500 hover:text-red-400 text-xs font-medium px-2 py-1 rounded hover:bg-red-900/20 transition-colors">✕</button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="px-5 py-8 text-center text-gray-600 text-sm">Sin productos aún</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <h3 class="font-semibold text-white mb-4">💰 Total</h3>
+    <div class="border-t border-gray-700 pt-3 flex justify-between font-bold text-lg">
+      <span class="text-white">Total</span>
+      <span class="text-green-300">${{ total|floatformat:0 }}</span>
+    </div>
+    {% if not account.is_open %}
+    <p class="text-xs text-green-500 mt-3">Cuenta cerrada el {{ account.closed_at|date:"d/m/Y H:i" }}</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

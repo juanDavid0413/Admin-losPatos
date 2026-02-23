@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — Billar Los Patos{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'table_sessions:open' %}"
+   class="bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+  + Abrir Sesión
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Stats cards -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Mesas libres</p>
+    <p class="text-3xl font-bold text-green-400">{{ tables_free }}</p>
+  </div>
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Mesas ocupadas</p>
+    <p class="text-3xl font-bold text-yellow-400">{{ tables_occupied }}</p>
+  </div>
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Sesiones activas</p>
+    <p class="text-3xl font-bold text-blue-400">{{ active_sessions }}</p>
+  </div>
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Ingresos hoy</p>
+    <p class="text-3xl font-bold text-white">${{ today_income|floatformat:0 }}</p>
+  </div>
+</div>
+
+<!-- Quick actions -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <a href="{% url 'table_sessions:open' %}"
+     class="bg-gray-900 border border-gray-800 hover:border-green-700 rounded-xl p-6 transition-colors group">
+    <div class="text-3xl mb-3">⏱️</div>
+    <p class="font-semibold text-white group-hover:text-green-400 transition-colors">Abrir Sesión de Mesa</p>
+    <p class="text-sm text-gray-500 mt-1">Inicia el cronómetro en una mesa</p>
+  </a>
+  <a href="{% url 'product_accounts:list' %}"
+     class="bg-gray-900 border border-gray-800 hover:border-blue-700 rounded-xl p-6 transition-colors group">
+    <div class="text-3xl mb-3">🧾</div>
+    <p class="font-semibold text-white group-hover:text-blue-400 transition-colors">Cuenta de Productos</p>
+    <p class="text-sm text-gray-500 mt-1">Venta de productos sin mesa</p>
+  </a>
+  <a href="{% url 'movements:list' %}"
+     class="bg-gray-900 border border-gray-800 hover:border-purple-700 rounded-xl p-6 transition-colors group">
+    <div class="text-3xl mb-3">📊</div>
+    <p class="font-semibold text-white group-hover:text-purple-400 transition-colors">Ver Movimientos</p>
+    <p class="text-sm text-gray-500 mt-1">Auditoría de ingresos</p>
+  </a>
+</div>
+{% endblock %}

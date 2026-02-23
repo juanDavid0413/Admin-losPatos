@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Movimiento #{{ movement.pk }}{% endblock %}
+{% block page_title %}Detalle de Movimiento{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'movements:list' %}" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+  ← Volver
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-4">
+
+  <!-- Header del movimiento -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+    <div class="flex items-start justify-between mb-6">
+      <div>
+        <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Movimiento #{{ movement.pk }}</p>
+        <p class="text-2xl font-bold {% if movement.movement_type == 'ingreso' %}text-green-400{% else %}text-red-400{% endif %}">
+          {% if movement.movement_type == 'ingreso' %}+{% else %}-{% endif %}${{ movement.amount|floatformat:0 }}
+        </p>
+        <p class="text-sm text-gray-500 mt-1">{{ movement.created_at|date:"d/m/Y H:i:s" }}</p>
+      </div>
+      <span class="px-3 py-1.5 rounded-full text-sm font-bold
+        {% if movement.movement_type == 'ingreso' %}bg-green-900/50 text-green-400 border border-green-800
+        {% else %}bg-red-900/50 text-red-400 border border-red-800{% endif %}">
+        {{ movement.get_movement_type_display }}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div class="bg-gray-800/50 rounded-lg p-3">
+        <p class="text-xs text-gray-500 mb-1">Origen</p>
+        <p class="text-white font-medium">{{ movement.get_source_display }}</p>
+      </div>
+      <div class="bg-gray-800/50 rounded-lg p-3">
+        <p class="text-xs text-gray-500 mb-1">Trabajador</p>
+        <p class="text-white font-medium">{{ movement.worker.get_full_name|default:movement.worker.username|default:"—" }}</p>
+      </div>
+    </div>
+
+    <div class="mt-4 bg-gray-800/50 rounded-lg p-3 text-sm">
+      <p class="text-xs text-gray-500 mb-1">Descripción</p>
+      <p class="text-gray-200">{{ movement.description }}</p>
+    </div>
+  </div>
+
+  <!-- Referencia asociada -->
+  {% if movement.table_session %}
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Sesión de Mesa Asociada</p>
+    <div class="grid grid-cols-3 gap-3 text-sm">
+      <div><p class="text-gray-500 text-xs mb-0.5">Mesa</p><p class="text-white font-medium">{{ movement.table_session.table }}</p></div>
+      <div><p class="text-gray-500 text-xs mb-0.5">Cliente</p><p class="text-white font-medium">{{ movement.table_session.client }}</p></div>
+      <div><p class="text-gray-500 text-xs mb-0.5">Duración</p><p class="text-white font-medium">{{ movement.table_session.elapsed_minutes|floatformat:0 }} min</p></div>
+      <div><p class="text-gray-500 text-xs mb-0.5">Tiempo</p><p class="text-green-400">${{ movement.table_session.time_total|floatformat:0 }}</p></div>
+      <div><p class="text-gray-500 text-xs mb-0.5">Productos</p><p class="text-blue-400">${{ movement.table_session.products_total|floatformat:0 }}</p></div>
+      <div><p class="text-gray-500 text-xs mb-0.5">Total</p><p class="text-white font-bold">${{ movement.table_session.grand_total|floatformat:0 }}</p></div>
+    </div>
+    <a href="{% url 'table_sessions:detail' pk=movement.table_session.pk %}" class="inline-block mt-3 text-green-500 hover:underline text-xs">Ver sesión completa →</a>
+  </div>
+  {% endif %}
+
+  {% if movement.product_account %}
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Cuenta de Productos Asociada</p>
+    <div class="grid grid-cols-2 gap-3 text-sm">
+      <div><p class="text-gray-500 text-xs mb-0.5">Cliente</p><p class="text-white font-medium">{{ movement.product_account.client }}</p></div>
+      <div><p class="text-gray-500 text-xs mb-0.5">Total</p><p class="text-white font-bold">${{ movement.product_account.grand_total|floatformat:0 }}</p></div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if movement.machine %}
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <p class="text-xs text-gray-500 uppercase tracking-widest mb-3">Máquina Asociada</p>
+    <p class="text-white font-medium">🎰 {{ movement.machine.name }}</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ table.name }}{% endblock %}
+{% block page_title %}Mesa: {{ table.name }}{% endblock %}
+{% block content %}
+<div class="max-w-lg">
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-3">
+    <div class="flex justify-between"><span class="text-gray-400">Estado</span><span class="font-bold {% if table.is_free %}text-green-400{% else %}text-yellow-400{% endif %}">{{ table.status|title }}</span></div>
+    <div class="flex justify-between"><span class="text-gray-400">Tarifa/hora</span><span class="text-white">${{ table.hourly_rate }}</span></div>
+    <div class="flex justify-between"><span class="text-gray-400">Tarifa/minuto</span><span class="text-white">${{ table.minute_rate }}</span></div>
+    {% if table.description %}<p class="text-gray-500 text-sm border-t border-gray-800 pt-3">{{ table.description }}</p>{% endif %}
+    {% if table.is_free %}
+    <a href="{% url 'table_sessions:open' %}?table={{ table.pk }}" class="block w-full text-center bg-green-600 hover:bg-green-500 text-white font-semibold py-2.5 rounded-lg mt-4">Abrir Sesión</a>
+    {% else %}
+    <a href="{% url 'table_sessions:detail' pk=table.active_session.pk %}" class="block w-full text-center bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-2.5 rounded-lg mt-4">Ver Sesión Activa</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

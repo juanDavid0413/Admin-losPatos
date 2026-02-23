@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Formulario — Productos{% endblock %}
+{% block page_title %}Formulario{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto bg-gray-900 border border-gray-800 rounded-xl p-8">
+  <form method="post" class="space-y-5">
+    {% csrf_token %}
+    {% for field in form %}
+    <div>
+      <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<p class="text-red-400 text-xs mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-2.5 rounded-lg">Guardar</button>
+  </form>
+</div>
+<script>
+document.querySelectorAll('select,input,textarea').forEach(el=>{
+  el.className='w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500';
+});
+</script>
+{% endblock %}

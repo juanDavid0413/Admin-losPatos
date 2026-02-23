@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Abrir Sesión{% endblock %}
+{% block page_title %}Abrir Nueva Sesión{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-8">
+    <form method="post" class="space-y-5">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <p class="text-red-400 text-xs mt-1">{{ field.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+          class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-2.5 rounded-lg transition-colors">
+          ⏱️ Abrir Sesión
+        </button>
+        <a href="{% url 'tables:list' %}"
+          class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors text-sm font-medium text-center">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  select, textarea {
+    @apply w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm;
+  }
+</style>
+<script>
+  // Aplicar estilos Tailwind a los selects/inputs de Django
+  document.querySelectorAll('select, textarea, input[type=text]').forEach(el => {
+    el.className = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500';
+  });
+</script>
+{% endblock %}

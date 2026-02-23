@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Máquinas{% endblock %}
+{% block page_title %}Máquinas{% endblock %}
+
+{% block header_actions %}
+<div class="flex gap-2">
+  <a href="{% url 'machines:payment' %}" class="bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-semibold px-4 py-2 rounded-lg">+ Registrar Pago</a>
+  <a href="{% url 'machines:create' %}" class="bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg">+ Nueva Máquina</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Máquinas -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for obj in machines %}
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div class="flex justify-between items-start mb-3">
+        <p class="font-bold text-white">🎰 {{ obj.name }}</p>
+        {% if obj.is_active %}<span class="px-2 py-1 bg-green-900/50 text-green-400 border border-green-800 rounded-full text-xs">Activa</span>
+        {% else %}<span class="px-2 py-1 bg-gray-800 text-gray-500 rounded-full text-xs">Inactiva</span>{% endif %}
+      </div>
+      {% if obj.description %}<p class="text-gray-500 text-sm mb-3">{{ obj.description }}</p>{% endif %}
+      <a href="{% url 'machines:payment' %}?machine={{ obj.pk }}" class="block text-center bg-yellow-700 hover:bg-yellow-600 text-white text-sm font-semibold py-2 rounded-lg">Registrar Pago</a>
+    </div>
+    {% empty %}
+    <div class="col-span-full text-center py-16 text-gray-600">
+      <div class="text-5xl mb-3">🎰</div>
+      <p>No hay máquinas registradas</p>
+      <a href="{% url 'machines:create' %}" class="text-green-500 hover:underline text-sm mt-2 inline-block">Agregar primera máquina</a>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagos recientes -->
+  {% if recent_payments %}
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-800">
+      <h3 class="font-semibold text-white">Pagos recientes</h3>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="text-xs text-gray-500 uppercase bg-gray-800/60">
+        <tr>
+          <th class="px-5 py-3 text-left">Fecha</th>
+          <th class="px-5 py-3 text-left">Máquina</th>
+          <th class="px-5 py-3 text-left">Cliente</th>
+          <th class="px-5 py-3 text-left">Trabajador</th>
+          <th class="px-5 py-3 text-left">Notas</th>
+          <th class="px-5 py-3 text-right">Monto</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        {% for p in recent_payments %}
+        <tr class="hover:bg-gray-800/30">
+          <td class="px-5 py-3 text-gray-400 whitespace-nowrap">{{ p.created_at|date:"d/m/Y H:i" }}</td>
+          <td class="px-5 py-3 text-white font-medium">{{ p.machine }}</td>
+          <td class="px-5 py-3 text-gray-300">{{ p.client|default:"—" }}</td>
+          <td class="px-5 py-3 text-gray-400">{{ p.worker.get_full_name|default:p.worker.username|default:"—" }}</td>
+          <td class="px-5 py-3 text-gray-500 text-xs max-w-xs truncate">{{ p.notes|default:"—" }}</td>
+          <td class="px-5 py-3 text-right font-bold text-green-400">${{ p.amount|floatformat:0 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Productos{% endblock %}
+{% block page_title %}Productos{% endblock %}
+{% block header_actions %}
+<a href="{% url 'products:create' %}" class="bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">+ Nuevo Producto</a>
+{% endblock %}
+{% block content %}
+<div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="text-xs text-gray-500 uppercase bg-gray-800/60">
+      <tr>
+        <th class="px-5 py-3 text-left">Nombre</th>
+        <th class="px-5 py-3 text-right">Precio Venta</th>
+        <th class="px-5 py-3 text-right">Precio Costo</th>
+        <th class="px-5 py-3 text-right">Stock</th>
+        <th class="px-5 py-3 text-left">Estado</th>
+        <th class="px-5 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-800">
+      {% for obj in products %}
+      <tr class="hover:bg-gray-800/30 transition-colors">
+        <td class="px-5 py-3 font-medium text-white">{{ obj.name }}</td>
+        <td class="px-5 py-3 text-right text-green-400">${{ obj.sale_price }}</td>
+        <td class="px-5 py-3 text-right text-gray-400">${{ obj.cost_price }}</td>
+        <td class="px-5 py-3 text-right {% if obj.stock == 0 %}text-red-400{% elif obj.stock < 5 %}text-yellow-400{% else %}text-gray-300{% endif %}">
+          {{ obj.stock }}
+        </td>
+        <td class="px-5 py-3">
+          {% if obj.is_active %}<span class="px-2 py-1 bg-green-900/50 text-green-400 border border-green-800 rounded-full text-xs">Activo</span>
+          {% else %}<span class="px-2 py-1 bg-gray-800 text-gray-500 rounded-full text-xs">Inactivo</span>{% endif %}
+        </td>
+        <td class="px-5 py-3 text-right">
+          <a href="{% url 'products:update' pk=obj.pk %}" class="text-green-500 hover:underline text-xs">Editar</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="px-5 py-12 text-center text-gray-600">No hay productos registrados</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

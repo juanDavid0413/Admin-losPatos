@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Usuarios{% endblock %}
+{% block page_title %}Usuarios{% endblock %}
+{% block header_actions %}
+<a href="{% url 'users:create' %}" class="bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg">+ Nuevo Usuario</a>
+{% endblock %}
+{% block content %}
+<div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="text-xs text-gray-500 uppercase bg-gray-800/60">
+      <tr>
+        <th class="px-5 py-3 text-left">Usuario</th>
+        <th class="px-5 py-3 text-left">Nombre</th>
+        <th class="px-5 py-3 text-left">Rol</th>
+        <th class="px-5 py-3 text-left">Estado</th>
+        <th class="px-5 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-800">
+      {% for obj in users %}
+      <tr class="hover:bg-gray-800/30">
+        <td class="px-5 py-3 font-medium text-white">{{ obj.username }}</td>
+        <td class="px-5 py-3 text-gray-300">{{ obj.get_full_name|default:"—" }}</td>
+        <td class="px-5 py-3">
+          {% if obj.is_admin %}<span class="px-2 py-1 bg-purple-900/50 text-purple-400 border border-purple-800 rounded-full text-xs">Admin</span>
+          {% else %}<span class="px-2 py-1 bg-blue-900/50 text-blue-400 border border-blue-800 rounded-full text-xs">Trabajador</span>{% endif %}
+        </td>
+        <td class="px-5 py-3">
+          {% if obj.is_active %}<span class="px-2 py-1 bg-green-900/50 text-green-400 border border-green-800 rounded-full text-xs">Activo</span>
+          {% else %}<span class="px-2 py-1 bg-gray-800 text-gray-500 rounded-full text-xs">Inactivo</span>{% endif %}
+        </td>
+        <td class="px-5 py-3 text-right">
+          <a href="{% url 'users:update' pk=obj.pk %}" class="text-green-500 hover:underline text-xs">Editar</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="px-5 py-12 text-center text-gray-600">No hay usuarios registrados</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
