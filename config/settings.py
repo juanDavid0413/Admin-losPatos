@@ -2,17 +2,28 @@
 Django settings for Billar Manager
 """
 import environ
+import os
 from pathlib import Path
 
-# config/settings.py → parent → config/ → parent → billard_manager/ (donde está manage.py)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(DEBUG=(bool, False))
-environ.Env.read_env(BASE_DIR / '.env')
+
+# Lee .env en local; en Railway las vars vienen del entorno directamente
+try:
+    environ.Env.read_env(BASE_DIR / '.env')
+except Exception:
+    pass
 
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
+
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
+
+# Railway inyecta RAILWAY_PUBLIC_DOMAIN con el dominio real del servicio
+RAILWAY_HOST = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
+if RAILWAY_HOST:
+    ALLOWED_HOSTS.append(RAILWAY_HOST)
 
 DJANGO_APPS = [
     'django.contrib.admin',
@@ -101,3 +112,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/usuarios/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/usuarios/login/'
+
+# Seguridad en produccion (HTTPS)
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_TRUSTED_ORIGINS = [
+        f'https://{RAILWAY_HOST}' if RAILWAY_HOST else 'https://*.railway.app'
+    ]
