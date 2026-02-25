@@ -70,12 +70,16 @@ class Receivable(models.Model):
         from apps.movements.models import Movement
         from apps.core.constants import MovementType, MovementSource
 
-        amount = Decimal(str(amount))
+        amount = Decimal(str(amount)).quantize(Decimal('1'), rounding='ROUND_HALF_UP')
 
         if amount <= 0:
             raise ValueError('El abono debe ser mayor a cero.')
-        if amount > self.balance:
-            raise ValueError(f'El abono (${amount}) supera el saldo pendiente (${self.balance}).')
+        balance_int = self.balance.quantize(Decimal('1'), rounding='ROUND_HALF_UP')
+        if amount > balance_int:
+            raise ValueError(f'El abono (${amount}) supera el saldo pendiente (${balance_int}).')
+        # Si queda diferencia de centavos, ajustar al balance exacto
+        if amount >= balance_int:
+            amount = self.balance
         if not self.is_pending:
             raise ValueError('Esta deuda ya esta saldada.')
 

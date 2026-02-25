@@ -57,9 +57,17 @@ class ReceivableApplyPaymentView(WorkerRequiredMixin, View):
         raw = request.POST.get('amount', '').strip()
 
         try:
-            amount = Decimal(raw.replace(',', '.'))
+            if not raw:
+                raise InvalidOperation('empty')
+            # Limpiar separadores: quitar puntos de miles, coma → punto decimal
+            if ',' in raw:
+                normalized = raw.replace('.', '').replace(',', '.')
+            else:
+                normalized = raw
+            # Redondear siempre a entero
+            amount = Decimal(normalized).quantize(Decimal('1'), rounding='ROUND_HALF_UP')
         except InvalidOperation:
-            messages.error(request, 'Monto invalido.')
+            messages.error(request, f'Ingresa un numero valido (ej: 6420).')
             return redirect('receivables:list')
 
         try:

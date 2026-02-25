@@ -37,7 +37,8 @@ class ProductAccount(models.Model):
             raise ValueError('Esta cuenta ya esta cerrada.')
 
         self.closed_at = timezone.now()
-        self.grand_total = Decimal(str(self.calculate_total()))
+        total = Decimal(str(self.calculate_total()))
+        self.grand_total = total.quantize(Decimal('1'), rounding='ROUND_HALF_UP')
         self.save()
 
         if paid:
