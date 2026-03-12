@@ -1,22 +1,75 @@
 {% extends 'base.html' %}
 {% block title %}Nueva Cuenta{% endblock %}
 {% block page_title %}Nueva Cuenta de Productos{% endblock %}
+
 {% block content %}
-<div class="max-w-lg mx-auto bg-gray-900 border border-gray-800 rounded-xl p-8">
-  <form method="post" class="space-y-5">
-    {% csrf_token %}
-    {% for field in form %}
-    <div>
-      <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ field.label }}</label>
-      {{ field }}
-      {% if field.errors %}<p class="text-red-400 text-xs mt-1">{{ field.errors|join:", " }}</p>{% endif %}
-    </div>
-    {% endfor %}
-    <div class="flex gap-3 pt-2">
-      <button type="submit" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-2.5 rounded-lg">Abrir Cuenta</button>
-      <a href="{% url 'product_accounts:list' %}" class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-medium text-center">Cancelar</a>
-    </div>
-  </form>
+<div class="max-w-lg mx-auto">
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-8">
+    <form method="post" class="space-y-5">
+      {% csrf_token %}
+
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1.5">Cliente</label>
+        <select name="client" required
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          id="clientSelect">
+          <option value="">Seleccionar cliente...</option>
+          {% for client in clients %}
+          <option value="{{ client.pk }}">{{ client.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Alias para cliente de paso -->
+      <div id="aliasField" class="hidden">
+        <div class="bg-yellow-900/20 border border-yellow-800/40 rounded-xl p-4">
+          <label class="block text-sm font-medium text-yellow-400 mb-1.5">
+            👤 Nombre / Alias del cliente
+          </label>
+          <input type="text" name="walkup_alias" id="walkupAlias"
+            placeholder="Ej: Juan, El flaco, Camisa roja..."
+            class="w-full bg-gray-800 border border-yellow-700/50 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+          <p class="text-xs text-yellow-600 mt-1.5">Quedara guardado en las notas de la cuenta.</p>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-1.5">Notas (opcional)</label>
+        <textarea name="notes" rows="2"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="Observaciones..."></textarea>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+          class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-2.5 rounded-lg">
+          🧾 Abrir Cuenta
+        </button>
+        <a href="{% url 'product_accounts:list' %}"
+          class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-medium text-center">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
 </div>
-<script>document.querySelectorAll('select,input,textarea').forEach(el=>{el.className='w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500';});</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const sel = document.getElementById('clientSelect');
+  const aliasField = document.getElementById('aliasField');
+  const aliasInput = document.getElementById('walkupAlias');
+
+  sel.addEventListener('change', function() {
+    const text = sel.options[sel.selectedIndex]?.text.toLowerCase() || '';
+    if (text.includes('de paso')) {
+      aliasField.classList.remove('hidden');
+      aliasInput.focus();
+    } else {
+      aliasField.classList.add('hidden');
+      aliasInput.value = '';
+    }
+  });
+});
+</script>
 {% endblock %}

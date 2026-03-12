@@ -5,7 +5,6 @@
 {% block content %}
 <div class="space-y-6">
 
-  <!-- Banner resumen -->
   {% if clients_debts %}
   <div class="bg-yellow-900/20 border border-yellow-800/50 rounded-xl p-5 flex items-center justify-between">
     <div class="flex items-center gap-3">
@@ -19,7 +18,6 @@
   </div>
   {% endif %}
 
-  <!-- Deudas agrupadas por cliente -->
   <div>
     <div class="flex items-center gap-3 mb-3">
       <h2 class="font-bold text-white">Pendientes de cobro</h2>
@@ -31,7 +29,7 @@
       {% for cd in clients_debts %}
       <div class="bg-gray-900 border border-yellow-900/30 rounded-xl overflow-hidden">
 
-        <!-- Header del cliente -->
+        <!-- Header cliente -->
         <div class="px-5 py-4 bg-gray-800/40 border-b border-gray-800 flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-full bg-yellow-700/40 flex items-center justify-center text-yellow-300 font-bold text-sm">
@@ -48,7 +46,7 @@
           </div>
         </div>
 
-        <!-- Deudas discriminadas -->
+        <!-- Deudas individuales -->
         <div class="divide-y divide-gray-800/50">
           {% for debt in cd.debts %}
           <div class="px-5 py-4">
@@ -65,7 +63,7 @@
                   <span class="text-xs text-gray-600">{{ debt.created_at|date:"d/m/Y H:i" }}</span>
                 </div>
 
-                <!-- Progreso de pago -->
+                <!-- Barra de progreso -->
                 <div class="mb-2">
                   <div class="flex justify-between text-xs text-gray-500 mb-1">
                     <span>Abonado: <span class="text-green-400 font-medium">${{ debt.amount_paid|floatformat:0 }}</span></span>
@@ -73,15 +71,15 @@
                     <span>Total: ${{ debt.amount|floatformat:0 }}</span>
                   </div>
                   <div class="w-full bg-gray-700 rounded-full h-1.5">
-                    {% if debt.amount > 0 %}
-                    <div class="bg-green-500 h-1.5 rounded-full transition-all"
-                         style="width: {{ debt.amount_paid|floatformat:0 }}00 / {{ debt.amount|floatformat:0 }}00 * 100{% if debt.amount_paid == 0 %}; width: 0%{% endif %}">
-                    </div>
+                    {% if debt.amount > 0 and debt.amount_paid > 0 %}
+                    <div class="bg-green-500 h-1.5 rounded-full" style="width: {% widthratio debt.amount_paid debt.amount 100 %}%"></div>
+                    {% else %}
+                    <div class="bg-green-500 h-1.5 rounded-full" style="width: 0%"></div>
                     {% endif %}
                   </div>
                 </div>
 
-                <!-- Historial de abonos -->
+                <!-- Historial abonos -->
                 {% if debt.payments.all %}
                 <div class="flex flex-wrap gap-1 mb-2">
                   {% for pay in debt.payments.all %}
@@ -99,29 +97,59 @@
 
               <!-- Formulario de abono -->
               <div class="shrink-0">
-                <form method="post" action="{% url 'receivables:apply_payment' pk=debt.pk %}"
-                      onsubmit="return validateAbono(this, {{ debt.balance }})">
+                <form id="form-debt-{{ debt.pk }}" method="post" action="{% url 'receivables:apply_payment' pk=debt.pk %}">
                   {% csrf_token %}
                   <div class="flex gap-2 items-center">
                     <div class="relative">
                       <span class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                      <input type="number" name="amount" step="1" min="1" max="{{ debt.balance|floatformat:0 }}"
+                      <input type="number" name="amount" id="amount-{{ debt.pk }}"
+                        step="1" min="1" max="{{ debt.balance|floatformat:0 }}"
                         placeholder="{{ debt.balance|floatformat:0 }}"
                         class="w-28 pl-6 pr-2 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-right">
                     </div>
-                    <button type="submit"
+                    <button type="button"
+                      onclick="submitAbono({{ debt.pk }}, {{ debt.balance|floatformat:0 }})"
                       class="bg-green-700 hover:bg-green-600 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors whitespace-nowrap">
                       Abonar
                     </button>
                   </div>
+
+                  <!-- Boton pagar total con modal de confirmacion -->
                   <button type="button"
-                    onclick="var f=this.closest('form'); f.querySelector('[name=amount]').value='{{ debt.balance|floatformat:0 }}'; f.submit();"
-                    class="mt-1 w-full text-center text-xs text-yellow-500 hover:text-yellow-300 hover:underline">
+                    onclick="confirmarPagoTotal({{ debt.pk }}, {{ debt.balance|floatformat:0 }}, '{{ cd.client.name|escapejs }}', '{{ debt.notes|escapejs }}')"
+                    class="mt-1 w-full text-center text-xs text-yellow-500 hover:text-yellow-300 hover:underline transition-colors">
                     Pagar total (${{ debt.balance|floatformat:0 }})
                   </button>
                 </form>
               </div>
             </div>
+
+            <!-- Detalle productos si tiene sesion -->
+            {% if debt.table_session and debt.table_session.session_products.all %}
+            <div class="mt-3 pt-3 border-t border-gray-800">
+              <p class="text-xs text-gray-500 mb-2 uppercase tracking-wider">Productos consumidos</p>
+              <div class="flex flex-wrap gap-2">
+                {% for item in debt.table_session.session_products.all %}
+                <span class="px-2 py-1 bg-gray-800 rounded text-xs text-gray-300">
+                  {{ item.product.name }} x{{ item.quantity }} = ${{ item.subtotal|floatformat:0 }}
+                </span>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if debt.product_account and debt.product_account.account_products.all %}
+            <div class="mt-3 pt-3 border-t border-gray-800">
+              <p class="text-xs text-gray-500 mb-2 uppercase tracking-wider">Productos</p>
+              <div class="flex flex-wrap gap-2">
+                {% for item in debt.product_account.account_products.all %}
+                <span class="px-2 py-1 bg-gray-800 rounded text-xs text-gray-300">
+                  {{ item.product.name }} x{{ item.quantity }} = ${{ item.unit_price|floatformat:0 }}
+                </span>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
           </div>
           {% endfor %}
         </div>
@@ -139,7 +167,7 @@
     {% endif %}
   </div>
 
-  <!-- Historial de cobros recientes -->
+  <!-- Historial pagadas -->
   {% if paid_recently %}
   <div>
     <div class="flex items-center gap-3 mb-3">
@@ -178,29 +206,39 @@
 </div>
 
 <script>
-function validateAbono(form, maxBalance) {
-  const input = form.querySelector('[name=amount]');
-  const raw = input.value.replace(',', '.');
-  const val = parseFloat(raw);
-  if (!raw || isNaN(val) || val <= 0) {
-    alert('Ingresa un monto valido mayor a cero.');
-    return false;
+function submitAbono(debtPk, maxBalance) {
+  const input = document.getElementById('amount-' + debtPk);
+  const val = parseInt(input.value);
+
+  if (!input.value || isNaN(val) || val <= 0) {
+    AppModal.alert({ title: 'Monto invalido', message: 'Ingresa un valor mayor a cero.', type: 'info' });
+    return;
   }
-  // Tolerancia de 1 centavo para evitar errores de redondeo
-  if (val > maxBalance + 0.01) {
-    alert('El abono ($' + val.toFixed(0) + ') supera el saldo pendiente ($' + Math.ceil(maxBalance) + ').');
-    return false;
+  if (val > maxBalance) {
+    AppModal.alert({
+      title: 'Monto excedido',
+      message: 'El abono (<strong>$' + val + '</strong>) supera el saldo pendiente (<strong>$' + maxBalance + '</strong>).',
+      type: 'info'
+    });
+    return;
   }
-  return confirm('Registrar abono de $' + Math.floor(val).toLocaleString('es-CO') + '?');
+  AppModal.confirm({
+    title: 'Registrar abono',
+    message: 'Confirmas el abono de <strong class="text-green-400 text-lg">$' + val.toLocaleString('es-CO') + '</strong>?',
+    type: 'confirm',
+    confirmText: '✓ Registrar abono',
+    onConfirm: () => document.getElementById('form-debt-' + debtPk).submit()
+  });
 }
 
-// Boton "Pagar total" arreglado
-document.querySelectorAll('[data-pay-full]').forEach(btn => {
-  btn.addEventListener('click', function() {
-    const form = this.closest('form');
-    form.querySelector('[name=amount]').value = this.dataset.payFull;
-    form.submit();
+function confirmarPagoTotal(debtPk, balance, clientName, detail) {
+  document.getElementById('amount-' + debtPk).value = balance;
+  AppModal.payDebt({
+    amount: balance.toLocaleString('es-CO'),
+    clientName: clientName,
+    debtDetail: detail,
+    onConfirm: () => document.getElementById('form-debt-' + debtPk).submit()
   });
-});
+}
 </script>
 {% endblock %}

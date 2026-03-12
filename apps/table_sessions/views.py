@@ -34,8 +34,15 @@ class SessionOpenView(WorkerRequiredMixin, CreateView):
             messages.error(self.request, f'La mesa {session.table.name} ya tiene una sesion activa.')
             return self.form_invalid(form)
         session.worker = self.request.user
+
+        # Si es cliente de paso, guardar alias en notas
+        alias = self.request.POST.get('walkup_alias', '').strip()
+        if alias and 'de paso' in session.client.name.lower():
+            session.notes = f'[Alias: {alias}]'
+
         session.save()
-        messages.success(self.request, f'Sesion abierta en {session.table.name}.')
+        label = f'"{alias}"' if alias else session.client.name
+        messages.success(self.request, f'Sesion abierta en {session.table.name} para {label}.')
         return redirect('table_sessions:detail', pk=session.pk)
 
 
@@ -49,6 +56,12 @@ class SessionDetailView(WorkerRequiredMixin, DetailView):
         ctx['product_form'] = SessionProductForm()
         ctx['products'] = self.object.session_products.select_related('product').all()
         ctx['products_cost'] = self.object.calculate_products_cost()
+
+        # Extraer alias si es cliente de paso
+        alias = ''
+        if self.object.notes and self.object.notes.startswith('[Alias:'):
+            alias = self.object.notes.replace('[Alias:', '').replace(']', '').strip()
+        ctx['walkup_alias'] = alias
         return ctx
 
 
@@ -60,7 +73,10 @@ class SessionAddProductView(WorkerRequiredMixin, View):
             product = form.cleaned_data['product']
             quantity = form.cleaned_data['quantity']
             try:
-                SessionProduct.objects.create(session=session, product=product, quantity=quantity, unit_price=product.sale_price)
+                SessionProduct.objects.create(
+                    session=session, product=product,
+                    quantity=quantity, unit_price=product.sale_price
+                )
                 messages.success(request, f'{product.name} agregado.')
             except ValueError as e:
                 messages.error(request, str(e))
@@ -77,10 +93,40 @@ class SessionRemoveProductView(WorkerRequiredMixin, View):
         return redirect('table_sessions:detail', pk=pk)
 
 
+class SessionPauseView(WorkerRequiredMixin, View):
+    def post(self, request, pk):
+        session = get_object_or_404(TableSession, pk=pk, closed_at__isnull=True)
+        try:
+            session.pause_timer()
+            messages.info(request, 'Cronometro pausado.')
+        except ValueError as e:
+            messages.error(request, str(e))
+        return redirect('table_sessions:detail', pk=pk)
+
+
+class SessionResumeView(WorkerRequiredMixin, View):
+    def post(self, request, pk):
+        session = get_object_or_404(TableSession, pk=pk, closed_at__isnull=True)
+        try:
+            session.resume_timer()
+            messages.success(request, 'Cronometro reanudado.')
+        except ValueError as e:
+            messages.error(request, str(e))
+        return redirect('table_sessions:detail', pk=pk)
+
+
+class SessionStopTimerView(WorkerRequiredMixin, View):
+    def post(self, request, pk):
+        session = get_object_or_404(TableSession, pk=pk, closed_at__isnull=True)
+        try:
+            session.stop_timer()
+            messages.warning(request, 'Tiempo detenido. Puedes seguir agregando productos.')
+        except ValueError as e:
+            messages.error(request, str(e))
+        return redirect('table_sessions:detail', pk=pk)
+
+
 class SessionCloseView(WorkerRequiredMixin, View):
-    """
-    Recibe paid=1 (pago) o paid=0 (queda debiendo).
-    """
     def post(self, request, pk):
         session = get_object_or_404(TableSession, pk=pk, closed_at__isnull=True)
         paid = request.POST.get('paid', '1') == '1'

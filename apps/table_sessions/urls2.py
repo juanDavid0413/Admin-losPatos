@@ -9,8 +9,5 @@ urlpatterns = [
     path('<int:pk>/', views.SessionDetailView.as_view(), name='detail'),
     path('<int:pk>/agregar-producto/', views.SessionAddProductView.as_view(), name='add_product'),
     path('<int:pk>/eliminar-producto/<int:item_pk>/', views.SessionRemoveProductView.as_view(), name='remove_product'),
-    path('<int:pk>/pausar/', views.SessionPauseView.as_view(), name='pause'),
-    path('<int:pk>/reanudar/', views.SessionResumeView.as_view(), name='resume'),
-    path('<int:pk>/detener-tiempo/', views.SessionStopTimerView.as_view(), name='stop_timer'),
     path('<int:pk>/cerrar/', views.SessionCloseView.as_view(), name='close'),
 ]

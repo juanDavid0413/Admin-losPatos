@@ -16,4 +16,5 @@ urlpatterns = [
     path('movimientos/', include('apps.movements.urls')),
     path('stock/', include('apps.stock_entries.urls')),
     path('cuentas-por-cobrar/', include('apps.receivables.urls')),
+    path('informes/', include('apps.reports.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

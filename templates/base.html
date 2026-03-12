@@ -71,6 +71,9 @@
     <a href="{% url 'movements:list' %}" class="sidebar-link">
       <span>📈</span> Movimientos
     </a>
+    <a href="{% url 'reports:index' %}" class="sidebar-link">
+      <span>📊</span> Informes
+    </a>
     <a href="{% url 'receivables:list' %}" class="sidebar-link">
       <span>⚠️</span> Por Cobrar
     </a>
@@ -134,6 +137,6 @@
     {% block content %}{% endblock %}
   </div>
 </main>
-
+    {% include 'partials/modal_system.html' %}
 </body>
 </html>

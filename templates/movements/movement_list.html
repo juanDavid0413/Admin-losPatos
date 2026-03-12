@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Movimientos{% endblock %}
-{% block page_title %}Movimientos Económicos{% endblock %}
+{% block page_title %}Movimientos{% endblock %}
 
 {% block content %}
 <div class="space-y-4">
@@ -8,102 +8,102 @@
   <!-- Filtros -->
   <div class="bg-gray-900 border border-gray-800 rounded-xl p-4">
     <form method="get" class="flex flex-wrap gap-3 items-end">
-      <!-- Buscar en descripción -->
-      <div class="flex-1 min-w-48">
-        <label class="block text-xs text-gray-500 mb-1.5 font-medium uppercase tracking-wider">Buscar</label>
-        <input type="text" name="q" value="{{ search_q }}" placeholder="Buscar en descripción..."
-          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-      </div>
-
-      <!-- Filtro trabajador -->
-      <div class="min-w-40">
-        <label class="block text-xs text-gray-500 mb-1.5 font-medium uppercase tracking-wider">Trabajador</label>
-        <select name="worker" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Trabajador</label>
+        <select name="worker" class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
           <option value="">Todos</option>
           {% for w in workers %}
-          <option value="{{ w.pk }}" {% if selected_worker == w.pk|stringformat:"s" %}selected{% endif %}>
-            {{ w.get_full_name|default:w.username }}
-          </option>
+          <option value="{{ w.pk }}" {% if request.GET.worker == w.pk|stringformat:"s" %}selected{% endif %}>{{ w.get_full_name|default:w.username }}</option>
           {% endfor %}
         </select>
       </div>
-
-      <!-- Filtro origen -->
-      <div class="min-w-44">
-        <label class="block text-xs text-gray-500 mb-1.5 font-medium uppercase tracking-wider">Origen</label>
-        <select name="source" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-          <option value="">Todos los orígenes</option>
-          {% for value, label in sources %}
-          <option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ label }}</option>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Origen</label>
+        <select name="source" class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+          <option value="">Todos</option>
+          <option value="sesion_mesa" {% if request.GET.source == 'sesion_mesa' %}selected{% endif %}>Mesa</option>
+          <option value="cuenta_producto" {% if request.GET.source == 'cuenta_producto' %}selected{% endif %}>Cuenta</option>
+          <option value="maquina" {% if request.GET.source == 'maquina' %}selected{% endif %}>Maquina</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Cliente</label>
+        <select name="client" class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+          <option value="">Todos</option>
+          {% for c in clients %}
+          <option value="{{ c.pk }}" {% if request.GET.client == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
           {% endfor %}
         </select>
       </div>
-
-      <!-- Botones -->
-      <div class="flex gap-2">
-        <button type="submit" class="bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-          Filtrar
-        </button>
-        {% if search_q or selected_worker or selected_source %}
-        <a href="{% url 'movements:list' %}" class="bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          Limpiar
-        </a>
-        {% endif %}
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Buscar</label>
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Descripcion..."
+          class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-48">
       </div>
+      <button type="submit" class="bg-green-700 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-lg">Filtrar</button>
+      {% if request.GET %}
+      <a href="{% url 'movements:list' %}" class="text-gray-400 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-gray-800">✕ Limpiar</a>
+      {% endif %}
     </form>
   </div>
 
-  <!-- Resultados -->
+  <!-- Tabla -->
   <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-    <div class="px-5 py-3 border-b border-gray-800 flex items-center justify-between">
-      <p class="text-sm text-gray-400">
-        {% if search_q or selected_worker or selected_source %}
-          Mostrando resultados filtrados
-        {% else %}
-          Últimos 50 movimientos
-        {% endif %}
-      </p>
-      <p class="text-xs text-gray-600">{{ movements|length }} resultado{% if movements|length != 1 %}s{% endif %}</p>
+    <div class="px-5 py-4 border-b border-gray-800 flex justify-between items-center">
+      <h3 class="font-semibold text-white">{{ movements|length }} movimiento{% if movements|length != 1 %}s{% endif %}</h3>
+      <div class="flex gap-4 text-sm">
+        <span class="text-green-400">↑ Ingresos: <strong>${{ total_income|floatformat:0 }}</strong></span>
+        <span class="text-red-400">↓ Egresos: <strong>${{ total_expense|floatformat:0 }}</strong></span>
+      </div>
     </div>
 
-    <table class="w-full text-sm">
-      <thead class="text-xs text-gray-500 uppercase bg-gray-800/60">
-        <tr>
-          <th class="px-5 py-3 text-left">Fecha</th>
-          <th class="px-5 py-3 text-left">Tipo</th>
-          <th class="px-5 py-3 text-left">Origen</th>
-          <th class="px-5 py-3 text-left">Descripción</th>
-          <th class="px-5 py-3 text-left">Trabajador</th>
-          <th class="px-5 py-3 text-right">Monto</th>
-          <th class="px-5 py-3"></th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-800">
-        {% for mov in movements %}
-        <tr class="hover:bg-gray-800/30 transition-colors cursor-pointer" onclick="window.location='{% url 'movements:detail' pk=mov.pk %}'">
-          <td class="px-5 py-3 text-gray-400 whitespace-nowrap text-xs">{{ mov.created_at|date:"d/m/Y H:i" }}</td>
-          <td class="px-5 py-3">
-            <span class="px-2 py-1 rounded-full text-xs font-bold
-              {% if mov.movement_type == 'ingreso' %}bg-green-900/50 text-green-400{% else %}bg-red-900/50 text-red-400{% endif %}">
-              {{ mov.get_movement_type_display }}
-            </span>
-          </td>
-          <td class="px-5 py-3 text-gray-400 text-xs">{{ mov.get_source_display }}</td>
-          <td class="px-5 py-3 text-gray-300 max-w-xs truncate text-xs">{{ mov.description }}</td>
-          <td class="px-5 py-3 text-gray-400 text-xs">{{ mov.worker.get_full_name|default:mov.worker.username|default:"—" }}</td>
-          <td class="px-5 py-3 text-right font-bold {% if mov.movement_type == 'ingreso' %}text-green-400{% else %}text-red-400{% endif %}">
-            ${{ mov.amount|floatformat:0 }}
-          </td>
-          <td class="px-5 py-3 text-right">
-            <a href="{% url 'movements:detail' pk=mov.pk %}" class="text-green-500 hover:underline text-xs">Ver →</a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="7" class="px-5 py-12 text-center text-gray-600">Sin movimientos para los filtros seleccionados</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% if movements %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-gray-500 uppercase bg-gray-800/60">
+          <tr>
+            <th class="px-4 py-3 text-left">Fecha</th>
+            <th class="px-4 py-3 text-left">Tipo</th>
+            <th class="px-4 py-3 text-left">Origen</th>
+            <th class="px-4 py-3 text-left">Cliente</th>
+            <th class="px-4 py-3 text-left">Descripcion</th>
+            <th class="px-4 py-3 text-left">Trabajador</th>
+            <th class="px-4 py-3 text-right">Monto</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for mov in movements %}
+          <tr class="hover:bg-gray-800/30 transition-colors">
+            <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{{ mov.created_at|date:"d/m/Y H:i" }}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded-full text-xs font-bold
+                {% if mov.movement_type == 'ingreso' %}bg-green-900/50 text-green-400
+                {% else %}bg-red-900/50 text-red-400{% endif %}">
+                {% if mov.movement_type == 'ingreso' %}↑ Ingreso{% else %}↓ Egreso{% endif %}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-gray-400 text-xs">{{ mov.get_source_display }}</td>
+            <td class="px-4 py-3">
+              {% if mov.client %}
+              <span class="text-gray-300 font-medium">{{ mov.client.name }}</span>
+              {% else %}
+              <span class="text-gray-600">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-gray-400 text-xs max-w-xs truncate">{{ mov.description }}</td>
+            <td class="px-4 py-3 text-gray-500 text-xs">{{ mov.worker.get_full_name|default:mov.worker.username|default:"—" }}</td>
+            <td class="px-4 py-3 text-right font-bold
+              {% if mov.movement_type == 'ingreso' %}text-green-400{% else %}text-red-400{% endif %}">
+              {% if mov.movement_type == 'ingreso' %}+{% else %}-{% endif %}${{ mov.amount|floatformat:0 }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="px-5 py-12 text-center text-gray-600">Sin movimientos para los filtros seleccionados</p>
+    {% endif %}
   </div>
-
 </div>
 {% endblock %}

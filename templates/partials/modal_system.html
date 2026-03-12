@@ -1,0 +1,143 @@
+<!-- Modal global de confirmacion — incluir en base.html antes de </body> -->
+<div id="globalModal" class="hidden fixed inset-0 bg-black/75 z-[999] flex items-center justify-center p-4" role="dialog">
+  <div class="bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-sm w-full shadow-2xl transform transition-all">
+    <!-- Icono -->
+    <div class="flex justify-center mb-4">
+      <div id="modalIcon" class="w-14 h-14 rounded-full flex items-center justify-center text-3xl bg-gray-800">
+        ❓
+      </div>
+    </div>
+    <!-- Contenido -->
+    <h3 id="modalTitle" class="text-lg font-bold text-white text-center mb-2"></h3>
+    <p id="modalMessage" class="text-sm text-gray-400 text-center mb-6"></p>
+    <!-- Botones -->
+    <div id="modalButtons" class="space-y-2"></div>
+  </div>
+</div>
+
+<script>
+/**
+ * Sistema global de modales — reemplaza alert() y confirm()
+ * 
+ * Uso:
+ *   AppModal.confirm({ title, message, onConfirm, confirmText, type })
+ *   AppModal.alert({ title, message, type })
+ *   AppModal.payDebt({ amount, clientName, onConfirm })
+ */
+const AppModal = (() => {
+  const modal    = document.getElementById('globalModal');
+  const icon     = document.getElementById('modalIcon');
+  const title    = document.getElementById('modalTitle');
+  const message  = document.getElementById('modalMessage');
+  const buttons  = document.getElementById('modalButtons');
+
+  const TYPES = {
+    confirm:  { bg: 'bg-yellow-900/50', emoji: '⚠️',  btnColor: 'bg-yellow-600 hover:bg-yellow-500' },
+    danger:   { bg: 'bg-red-900/50',    emoji: '🗑️',  btnColor: 'bg-red-600 hover:bg-red-500' },
+    success:  { bg: 'bg-green-900/50',  emoji: '✅',  btnColor: 'bg-green-600 hover:bg-green-500' },
+    payment:  { bg: 'bg-green-900/50',  emoji: '💵',  btnColor: 'bg-green-600 hover:bg-green-500' },
+    info:     { bg: 'bg-blue-900/50',   emoji: 'ℹ️',  btnColor: 'bg-blue-600 hover:bg-blue-500' },
+  };
+
+  function show({ type = 'confirm', titleText, messageText, actions = [] }) {
+    const t = TYPES[type] || TYPES.confirm;
+    icon.className = `w-14 h-14 rounded-full flex items-center justify-center text-3xl ${t.bg}`;
+    icon.textContent = t.emoji;
+    title.textContent = titleText || '';
+    message.innerHTML = messageText || '';
+
+    buttons.innerHTML = '';
+    actions.forEach(action => {
+      const btn = document.createElement('button');
+      btn.textContent = action.label;
+      btn.className = `w-full ${action.primary ? t.btnColor : 'bg-gray-800 hover:bg-gray-700'} text-white font-${action.primary ? 'bold' : 'medium'} py-3 rounded-xl transition-colors`;
+      btn.onclick = () => {
+        close();
+        if (action.onClick) action.onClick();
+      };
+      buttons.appendChild(btn);
+    });
+
+    modal.classList.remove('hidden');
+    modal.onclick = (e) => { if (e.target === modal) close(); };
+  }
+
+  function close() {
+    modal.classList.add('hidden');
+  }
+
+  return {
+    // Confirmacion generica
+    confirm({ title, message, onConfirm, confirmText = 'Confirmar', type = 'confirm' }) {
+      show({
+        type,
+        titleText: title,
+        messageText: message,
+        actions: [
+          { label: confirmText, primary: true, onClick: onConfirm },
+          { label: 'Cancelar', primary: false },
+        ]
+      });
+    },
+
+    // Alerta simple
+    alert({ title, message, type = 'info' }) {
+      show({
+        type,
+        titleText: title,
+        messageText: message,
+        actions: [{ label: 'Entendido', primary: true }]
+      });
+    },
+
+    // Modal especial para cobro de deuda
+    payDebt({ amount, clientName, debtDetail, onConfirm }) {
+      show({
+        type: 'payment',
+        titleText: 'Confirmar cobro',
+        messageText: `
+          <span class="block text-gray-300 mb-1">Cliente: <strong class="text-white">${clientName}</strong></span>
+          <span class="block text-gray-500 text-xs mb-3">${debtDetail || ''}</span>
+          <span class="block text-3xl font-bold text-green-400 mb-1">$${amount}</span>
+          <span class="block text-xs text-gray-500">Esta seguro de cobrar el total de esta deuda?</span>
+        `,
+        actions: [
+          { label: '💵 Sí, cobrar total', primary: true, onClick: onConfirm },
+          { label: 'Cancelar', primary: false },
+        ]
+      });
+    },
+
+    // Eliminar con peligro
+    danger({ title, message, onConfirm, confirmText = 'Eliminar' }) {
+      show({
+        type: 'danger',
+        titleText: title,
+        messageText: message,
+        actions: [
+          { label: confirmText, primary: true, onClick: onConfirm },
+          { label: 'Cancelar', primary: false },
+        ]
+      });
+    },
+
+    close,
+  };
+})();
+
+// Interceptar todos los form con data-confirm para usar modal
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('form[data-confirm]').forEach(form => {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      AppModal.confirm({
+        title: form.dataset.confirmTitle || 'Confirmar accion',
+        message: form.dataset.confirm,
+        type: form.dataset.confirmType || 'confirm',
+        confirmText: form.dataset.confirmBtn || 'Confirmar',
+        onConfirm: () => form.submit(),
+      });
+    });
+  });
+});
+</script>

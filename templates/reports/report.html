@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% block title %}Informes{% endblock %}
+{% block page_title %}Informes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Selector de periodo -->
+  <div class="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-xl p-2 w-fit">
+    {% for p, label in period_choices %}
+    <a href="?period={{ p }}"
+      class="px-5 py-2 rounded-lg text-sm font-semibold transition-colors
+        {% if period == p %}bg-green-600 text-white{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Rango de fechas -->
+  <p class="text-gray-500 text-sm">
+    {% if period == 'day' %}
+      Hoy — <span class="text-gray-300">{{ date_start|date:"d \d\e F \d\e Y" }}</span>
+    {% elif period == 'week' %}
+      Semana del <span class="text-gray-300">{{ date_start|date:"d/m" }}</span> al <span class="text-gray-300">{{ date_end|date:"d/m/Y" }}</span>
+    {% else %}
+      Mes de <span class="text-gray-300">{{ date_start|date:"F \d\e Y" }}</span>
+    {% endif %}
+  </p>
+
+  <!-- Cards resumen -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-gray-900 border border-green-900/40 rounded-xl p-5">
+      <p class="text-xs text-green-500 uppercase tracking-widest mb-1">Ganancias</p>
+      <p class="text-3xl font-bold text-green-400">${{ total_income|floatformat:0 }}</p>
+      <p class="text-xs text-gray-600 mt-1">Sesiones + Cuentas</p>
+    </div>
+    <div class="bg-gray-900 border border-red-900/40 rounded-xl p-5">
+      <p class="text-xs text-red-500 uppercase tracking-widest mb-1">Maquinas</p>
+      <p class="text-3xl font-bold text-red-400">-${{ total_machines|floatformat:0 }}</p>
+      <p class="text-xs text-gray-600 mt-1">Pagos a maquinas</p>
+    </div>
+    <div class="bg-gray-900 border border-blue-900/40 rounded-xl p-5">
+      <p class="text-xs text-blue-500 uppercase tracking-widest mb-1">Deudas cobradas</p>
+      <p class="text-3xl font-bold text-blue-400">${{ total_debt_collected|floatformat:0 }}</p>
+      <p class="text-xs text-gray-600 mt-1">Abonos recibidos</p>
+    </div>
+    <div class="bg-gray-900 border border-gray-700 rounded-xl p-5">
+      <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Movimientos</p>
+      <p class="text-3xl font-bold text-white">{{ movements|length }}</p>
+      <p class="text-xs text-gray-600 mt-1">Total registros</p>
+    </div>
+  </div>
+
+  <!-- Resumen diario (solo semana/mes) -->
+  {% if daily_summary %}
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-800">
+      <h3 class="font-semibold text-white">Resumen por dia</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-gray-500 uppercase bg-gray-800/60">
+          <tr>
+            <th class="px-5 py-3 text-left">Dia</th>
+            <th class="px-5 py-3 text-right">Ganancias</th>
+            <th class="px-5 py-3 text-right">Maquinas</th>
+            <th class="px-5 py-3 text-right">Movimientos</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for day in daily_summary %}
+          <tr class="hover:bg-gray-800/30 {% if day.income == 0 and day.machines == 0 %}opacity-40{% endif %}">
+            <td class="px-5 py-3 text-gray-300 font-medium">{{ day.date|date:"D d/m" }}</td>
+            <td class="px-5 py-3 text-right font-bold text-green-400">
+              {% if day.income > 0 %}${{ day.income|floatformat:0 }}{% else %}<span class="text-gray-700">—</span>{% endif %}
+            </td>
+            <td class="px-5 py-3 text-right text-red-400">
+              {% if day.machines > 0 %}-${{ day.machines|floatformat:0 }}{% else %}<span class="text-gray-700">—</span>{% endif %}
+            </td>
+            <td class="px-5 py-3 text-right text-gray-500">{{ day.count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-gray-800/40 border-t border-gray-700">
+          <tr>
+            <td class="px-5 py-3 font-bold text-gray-300">TOTAL</td>
+            <td class="px-5 py-3 text-right font-bold text-green-400">${{ total_income|floatformat:0 }}</td>
+            <td class="px-5 py-3 text-right font-bold text-red-400">-${{ total_machines|floatformat:0 }}</td>
+            <td class="px-5 py-3 text-right font-bold text-gray-300">{{ movements|length }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Movimientos detallados -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-800">
+      <h3 class="font-semibold text-white">Movimientos del periodo</h3>
+    </div>
+    {% if movements %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-gray-500 uppercase bg-gray-800/60">
+          <tr>
+            <th class="px-4 py-3 text-left">Fecha / Hora</th>
+            <th class="px-4 py-3 text-left">Tipo</th>
+            <th class="px-4 py-3 text-left">Cliente</th>
+            <th class="px-4 py-3 text-left">Descripcion</th>
+            <th class="px-4 py-3 text-left">Trabajador</th>
+            <th class="px-4 py-3 text-right">Monto</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for mov in movements %}
+          <tr class="hover:bg-gray-800/20">
+            <td class="px-4 py-2.5 text-gray-500 text-xs whitespace-nowrap">{{ mov.created_at|date:"d/m/Y H:i" }}</td>
+            <td class="px-4 py-2.5">
+              <span class="px-2 py-0.5 rounded-full text-xs font-bold
+                {% if mov.movement_type == 'ingreso' %}bg-green-900/50 text-green-400
+                {% else %}bg-red-900/50 text-red-400{% endif %}">
+                {% if mov.movement_type == 'ingreso' %}↑{% else %}↓{% endif %} {{ mov.get_source_display }}
+              </span>
+            </td>
+            <td class="px-4 py-2.5 text-gray-300 text-xs">{{ mov.client.name|default:"—" }}</td>
+            <td class="px-4 py-2.5 text-gray-400 text-xs max-w-xs truncate">{{ mov.description }}</td>
+            <td class="px-4 py-2.5 text-gray-500 text-xs">{{ mov.worker.get_full_name|default:mov.worker.username|default:"—" }}</td>
+            <td class="px-4 py-2.5 text-right font-bold text-xs
+              {% if mov.movement_type == 'ingreso' %}text-green-400{% else %}text-red-400{% endif %}">
+              {% if mov.movement_type == 'ingreso' %}+{% else %}-{% endif %}${{ mov.amount|floatformat:0 }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="px-5 py-10 text-center text-gray-600">Sin movimientos en este periodo</p>
+    {% endif %}
+  </div>
+
+  <!-- Actividad de usuarios -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-800">
+      <h3 class="font-semibold text-white">Actividad de usuarios</h3>
+    </div>
+
+    {% if users_activity %}
+    <div class="divide-y divide-gray-800">
+      {% for ua in users_activity %}
+      <div class="px-5 py-4">
+        <!-- Header usuario -->
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-blue-900/50 flex items-center justify-center text-blue-300 font-bold text-sm">
+              {{ ua.user.get_full_name|default:ua.user.username|first|upper }}
+            </div>
+            <div>
+              <p class="font-semibold text-white">{{ ua.user.get_full_name|default:ua.user.username }}</p>
+              <p class="text-xs text-gray-500">{{ ua.session_count }} sesion{% if ua.session_count != 1 %}es{% endif %}
+                {% if ua.total_minutes %} — {{ ua.total_minutes }} min totales{% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalle de sesiones -->
+        <div class="space-y-1.5 ml-11">
+          {% for s in ua.sessions %}
+          <div class="flex items-center gap-3 text-xs bg-gray-800/40 rounded-lg px-3 py-2">
+            <span class="w-2 h-2 rounded-full {% if s.is_active %}bg-green-400 animate-pulse{% else %}bg-gray-600{% endif %} shrink-0"></span>
+            <span class="text-gray-400 whitespace-nowrap">
+              <strong class="text-gray-300">Inicio:</strong> {{ s.login_at|date:"d/m/Y H:i" }}
+            </span>
+            <span class="text-gray-600">→</span>
+            <span class="text-gray-400 whitespace-nowrap">
+              {% if s.logout_at %}
+                <strong class="text-gray-300">Fin:</strong> {{ s.logout_at|date:"d/m/Y H:i" }}
+                <span class="text-gray-600 ml-2">({{ s.duration_minutes }} min)</span>
+              {% else %}
+                <span class="text-green-400 font-medium">Activo ahora</span>
+              {% endif %}
+            </span>
+            {% if s.ip_address %}
+            <span class="text-gray-700 ml-auto">{{ s.ip_address }}</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <p class="px-5 py-10 text-center text-gray-600">Sin actividad de usuarios en este periodo</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

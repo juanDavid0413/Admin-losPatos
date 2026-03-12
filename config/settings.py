@@ -46,6 +46,7 @@ LOCAL_APPS = [
     'apps.movements',
     'apps.stock_entries',
     'apps.receivables',
+    'apps.reports',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS
@@ -74,6 +75,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.reports.context_processors.period_choices',
             ],
         },
     },

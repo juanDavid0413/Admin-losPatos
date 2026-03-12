@@ -5,12 +5,13 @@ from decimal import Decimal
 
 
 class ProductAccount(models.Model):
-    client = models.ForeignKey('clients.Client', on_delete=models.PROTECT, related_name='product_accounts', verbose_name='Cliente')
-    worker = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='product_accounts', verbose_name='Trabajador')
-    opened_at = models.DateTimeField(default=timezone.now, verbose_name='Apertura')
-    closed_at = models.DateTimeField(null=True, blank=True, verbose_name='Cierre')
-    grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'), verbose_name='Total')
-    notes = models.TextField(blank=True, verbose_name='Notas')
+    client       = models.ForeignKey('clients.Client', on_delete=models.PROTECT, related_name='product_accounts')
+    worker       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='product_accounts')
+    client_alias = models.CharField(max_length=100, blank=True, verbose_name='Nombre de paso')
+    opened_at    = models.DateTimeField(default=timezone.now)
+    closed_at    = models.DateTimeField(null=True, blank=True)
+    grand_total  = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0'))
+    notes        = models.TextField(blank=True)
 
     class Meta:
         verbose_name = 'Cuenta de Productos'
@@ -18,8 +19,13 @@ class ProductAccount(models.Model):
         ordering = ['-opened_at']
 
     def __str__(self):
-        status = 'Abierta' if self.is_open else 'Cerrada'
-        return f'Cuenta {self.client} ({status})'
+        return f'Cuenta {self.display_name}'
+
+    @property
+    def display_name(self):
+        if self.client_alias:
+            return f'Cliente de Paso ({self.client_alias})'
+        return self.client.name
 
     @property
     def is_open(self):
@@ -41,13 +47,16 @@ class ProductAccount(models.Model):
         self.grand_total = total.quantize(Decimal('1'), rounding='ROUND_HALF_UP')
         self.save()
 
+        desc = f'Cierre cuenta productos — {self.display_name}'
+
         if paid:
             Movement.objects.create(
                 movement_type=MovementType.INCOME,
                 source=MovementSource.PRODUCT_ACCOUNT,
                 amount=self.grand_total,
-                description=f'Cierre cuenta productos — {self.client.name}',
+                description=desc,
                 product_account=self,
+                client=self.client,
                 worker=worker,
             )
         else:
@@ -56,22 +65,15 @@ class ProductAccount(models.Model):
                 product_account=self,
                 client=self.client,
                 amount=self.grand_total,
-                notes=f'Cuenta productos — {self.client.name}',
+                notes=desc,
             )
 
 
 class AccountProduct(models.Model):
-    account = models.ForeignKey(ProductAccount, on_delete=models.CASCADE, related_name='account_products', verbose_name='Cuenta')
-    product = models.ForeignKey('products.Product', on_delete=models.PROTECT, verbose_name='Producto')
-    quantity = models.PositiveIntegerField(default=1, verbose_name='Cantidad')
-    unit_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio unitario')
-
-    class Meta:
-        verbose_name = 'Producto en Cuenta'
-        verbose_name_plural = 'Productos en Cuenta'
-
-    def __str__(self):
-        return f'{self.product.name} x{self.quantity}'
+    account    = models.ForeignKey(ProductAccount, on_delete=models.CASCADE, related_name='account_products')
+    product    = models.ForeignKey('products.Product', on_delete=models.PROTECT)
+    quantity   = models.PositiveIntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def save(self, *args, **kwargs):
         if not self.pk:

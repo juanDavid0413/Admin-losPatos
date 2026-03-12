@@ -6,5 +6,5 @@ app_name = 'machines'
 urlpatterns = [
     path('', views.MachineListView.as_view(), name='list'),
     path('crear/', views.MachineCreateView.as_view(), name='create'),
-    path('<int:pk>/pagar/', views.MachinePaymentView.as_view(), name='payment'),
+    path('pago/', views.MachinePaymentView.as_view(), name='payment'),
 ]

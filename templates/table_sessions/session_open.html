@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
-{% block title %}Abrir Sesión{% endblock %}
-{% block page_title %}Abrir Nueva Sesión{% endblock %}
+{% block title %}Abrir Sesion{% endblock %}
+{% block page_title %}Abrir Nueva Sesion{% endblock %}
 
 {% block content %}
 <div class="max-w-lg mx-auto">
   <div class="bg-gray-900 border border-gray-800 rounded-xl p-8">
-    <form method="post" class="space-y-5">
+    <form method="post" class="space-y-5" id="sessionForm">
       {% csrf_token %}
+
       {% for field in form %}
       <div>
         <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ field.label }}</label>
@@ -16,10 +17,24 @@
         {% endif %}
       </div>
       {% endfor %}
+
+      <!-- Campo alias para cliente de paso (se muestra solo si seleccionan ese cliente) -->
+      <div id="aliasField" class="hidden">
+        <div class="bg-yellow-900/20 border border-yellow-800/40 rounded-xl p-4">
+          <label class="block text-sm font-medium text-yellow-400 mb-1.5">
+            👤 Nombre / Alias del cliente
+          </label>
+          <input type="text" name="walkup_alias" id="walkupAlias"
+            placeholder="Ej: Juan, El flaco, Camisa roja..."
+            class="w-full bg-gray-800 border border-yellow-700/50 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+          <p class="text-xs text-yellow-600 mt-1.5">Este alias quedara guardado en las notas de la sesion para identificarla despues.</p>
+        </div>
+      </div>
+
       <div class="flex gap-3 pt-2">
         <button type="submit"
           class="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-2.5 rounded-lg transition-colors">
-          ⏱️ Abrir Sesión
+          ⏱️ Abrir Sesion
         </button>
         <a href="{% url 'tables:list' %}"
           class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors text-sm font-medium text-center">
@@ -30,15 +45,35 @@
   </div>
 </div>
 
-<style>
-  select, textarea {
-    @apply w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm;
-  }
-</style>
 <script>
-  // Aplicar estilos Tailwind a los selects/inputs de Django
+document.addEventListener('DOMContentLoaded', function() {
+  const clientSelect = document.querySelector('select[name="client"]');
+  const aliasField   = document.getElementById('aliasField');
+  const aliasInput   = document.getElementById('walkupAlias');
+
+  // Buscar la opcion "Cliente de Paso" por texto
+  function isWalkupSelected() {
+    const selected = clientSelect.options[clientSelect.selectedIndex];
+    return selected && selected.text.toLowerCase().includes('de paso');
+  }
+
+  function toggleAlias() {
+    if (isWalkupSelected()) {
+      aliasField.classList.remove('hidden');
+      aliasInput.focus();
+    } else {
+      aliasField.classList.add('hidden');
+      aliasInput.value = '';
+    }
+  }
+
+  clientSelect.addEventListener('change', toggleAlias);
+  toggleAlias(); // por si ya viene seleccionado
+
+  // Aplicar estilos Tailwind a los campos de Django
   document.querySelectorAll('select, textarea, input[type=text]').forEach(el => {
     el.className = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500';
   });
+});
 </script>
 {% endblock %}
