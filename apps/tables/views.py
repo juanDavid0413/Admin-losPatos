@@ -26,8 +26,8 @@ class TableCreateView(AdminRequiredMixin, CreateView):
     success_url = reverse_lazy('tables:list')
 
     def form_valid(self, form):
-        messages.success(self.request, 'Mesa creada correctamente.')
-        return super().form_valid(form)
+     messages.success(self.request, 'Mesa creada correctamente.')
+     return super().form_valid(form)
 
 
 class TableUpdateView(AdminRequiredMixin, UpdateView):

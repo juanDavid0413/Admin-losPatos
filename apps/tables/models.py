@@ -4,21 +4,36 @@ from decimal import Decimal
 
 
 class Table(models.Model):
-    """
-    Mesa de billar.
-    Reglas del documento:
-    - Una mesa = una sesión activa máximo
-    - Estado se DERIVA de la sesión activa (no manual)
-    """
-    name = models.CharField(max_length=50, unique=True, verbose_name='Nombre')
+
+    TYPE_TRES_BANDAS = 'tres_bandas'
+    TYPE_LIBRE       = 'libre'
+    TYPE_POOL        = 'pool'
+    TYPE_CHOICES = [
+        (TYPE_TRES_BANDAS, '3 Bandas'),
+        (TYPE_LIBRE,       'Libre'),
+        (TYPE_POOL,        'Pool'),
+    ]
+
+    # Imagen de fondo por tipo (en static/img/tables/)
+    TYPE_IMAGES = {
+        TYPE_TRES_BANDAS: 'img/tables/tres_bandas.jpg',
+        TYPE_LIBRE:       'img/tables/libre.jpg',
+        TYPE_POOL:        'img/tables/pool.jpg',
+    }
+
+    name        = models.CharField(max_length=50, unique=True, verbose_name='Nombre')
+    table_type  = models.CharField(
+        max_length=20, choices=TYPE_CHOICES, default=TYPE_LIBRE,
+        verbose_name='Tipo de mesa'
+    )
     hourly_rate = models.DecimalField(
         max_digits=10, decimal_places=2,
         verbose_name='Tarifa por hora'
     )
     description = models.TextField(blank=True, verbose_name='Descripción')
-    is_active = models.BooleanField(default=True, verbose_name='Activa')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    is_active   = models.BooleanField(default=True, verbose_name='Activa')
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = 'Mesa'
@@ -29,11 +44,12 @@ class Table(models.Model):
         return self.name
 
     @property
+    def bg_image(self):
+        """Ruta relativa a static/ para usar en templates con {% static %}."""
+        return self.TYPE_IMAGES.get(self.table_type, '')
+
+    @property
     def status(self):
-        """
-        El estado se DERIVA de si hay una sesión activa.
-        Nunca se guarda en base de datos — siempre se calcula.
-        """
         if self.sessions.filter(closed_at__isnull=True).exists():
             return TableStatus.OCCUPIED
         return TableStatus.FREE
@@ -44,7 +60,6 @@ class Table(models.Model):
 
     @property
     def minute_rate(self):
-        """Valor por minuto = valor_hora / 60 (regla del documento)."""
         return Decimal(self.hourly_rate) / Decimal(60)
 
     @property

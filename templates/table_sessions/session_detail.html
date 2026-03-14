@@ -43,7 +43,14 @@
   <div class="lg:col-span-2 space-y-4">
 
     <!-- Cronometro -->
-    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+    <div class="relative rounded-xl overflow-hidden p-6 text-center border
+      {% if session.table.bg_image %}border-gray-700{% else %}bg-gray-900 border-gray-800{% endif %}">
+      {% if session.table.bg_image %}
+      <div class="absolute inset-0 bg-cover bg-center opacity-30"
+           style="background-image: url('/static/{{ session.table.bg_image }}')"></div>
+      <div class="absolute inset-0 bg-gray-950/70"></div>
+      {% endif %}
+      <div class="relative z-10">
       <p class="text-xs text-gray-500 uppercase tracking-widest mb-2">Tiempo efectivo</p>
       <div id="timer" class="text-6xl font-mono font-bold tracking-tight
         {% if session.is_timer_stopped %}text-red-400{% else %}text-green-400{% endif %}">00:00:00</div>
@@ -77,7 +84,8 @@
         {% endif %}
       </div>
       {% endif %}
-    </div>
+      </div><!-- /z-10 cronometro -->
+    </div><!-- /cronometro card -->
 
     <!-- Info -->
     <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 grid grid-cols-3 gap-4 text-center">

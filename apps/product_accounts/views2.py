@@ -37,13 +37,14 @@ class ProductAccountCreateView(WorkerRequiredMixin, CreateView):
         account = form.save(commit=False)
         account.worker = self.request.user
 
-        # Guardar alias en el campo correcto
+        # Alias para cliente de paso
         alias = self.request.POST.get('walkup_alias', '').strip()
         if alias and 'de paso' in account.client.name.lower():
-            account.client_alias = alias
+            prefix = f'[Alias: {alias}] '
+            account.notes = prefix + (account.notes or '')
 
         account.save()
-        label = f'Cliente de Paso ({alias})' if alias else account.client.name
+        label = f'"{alias}"' if alias else account.client.name
         messages.success(self.request, f'Cuenta abierta para {label}.')
         return redirect('product_accounts:detail', pk=account.pk)
 
@@ -58,6 +59,13 @@ class ProductAccountDetailView(WorkerRequiredMixin, DetailView):
         ctx['products_list'] = self.object.account_products.select_related('product').all()
         ctx['total'] = self.object.calculate_total()
         ctx['available_products'] = Product.objects.filter(is_active=True, stock__gt=0)
+
+        # Extraer alias si aplica
+        alias = ''
+        notes = self.object.notes or ''
+        if notes.startswith('[Alias:'):
+            alias = notes.split(']')[0].replace('[Alias:', '').strip()
+        ctx['walkup_alias'] = alias
         return ctx
 
 

@@ -1,23 +1,118 @@
 {% extends 'base.html' %}
 {% block title %}Formulario Mesa{% endblock %}
 {% block page_title %}{% if object %}Editar Mesa{% else %}Nueva Mesa{% endif %}{% endblock %}
+
 {% block content %}
 <div class="max-w-lg mx-auto bg-gray-900 border border-gray-800 rounded-xl p-8">
-  <form method="post" class="space-y-5">
+  <form method="post" class="space-y-6" id="mesaForm">
     {% csrf_token %}
-    {% for field in form %}
+
+    <!-- Tipo de mesa -->
     <div>
-      <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ field.label }}</label>
-      {{ field }}
-      {% if field.errors %}<p class="text-red-400 text-xs mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+      <label class="block text-sm font-medium text-gray-400 mb-3">Tipo de mesa</label>
+      <div class="grid grid-cols-3 gap-3">
+
+        <label class="cursor-pointer" for="tipo_tres_bandas">
+          <input type="radio" name="table_type" value="tres_bandas" id="tipo_tres_bandas"
+            class="sr-only"
+            {% if object.table_type == 'tres_bandas' or not object %}checked{% endif %}>
+          <div id="card_tres_bandas" class="relative rounded-xl overflow-hidden border-2 h-28 transition-all
+            {% if object.table_type == 'tres_bandas' or not object %}border-green-500 ring-2 ring-green-500/30{% else %}border-gray-700{% endif %}">
+            <div class="absolute inset-0 bg-cover bg-center"
+                 style="background-image: url('/static/img/tables/tres_bandas.jpg')"></div>
+            <div class="absolute inset-0 bg-black/50"></div>
+            <div class="absolute inset-0 flex items-end p-2">
+              <span class="text-white text-xs font-bold">3 Bandas</span>
+            </div>
+          </div>
+        </label>
+
+        <label class="cursor-pointer" for="tipo_libre">
+          <input type="radio" name="table_type" value="libre" id="tipo_libre"
+            class="sr-only"
+            {% if object.table_type == 'libre' %}checked{% endif %}>
+          <div id="card_libre" class="relative rounded-xl overflow-hidden border-2 h-28 transition-all
+            {% if object.table_type == 'libre' %}border-green-500 ring-2 ring-green-500/30{% else %}border-gray-700{% endif %}">
+            <div class="absolute inset-0 bg-cover bg-center"
+                 style="background-image: url('/static/img/tables/libre.jpg')"></div>
+            <div class="absolute inset-0 bg-black/50"></div>
+            <div class="absolute inset-0 flex items-end p-2">
+              <span class="text-white text-xs font-bold">Libre</span>
+            </div>
+          </div>
+        </label>
+
+        <label class="cursor-pointer" for="tipo_pool">
+          <input type="radio" name="table_type" value="pool" id="tipo_pool"
+            class="sr-only"
+            {% if object.table_type == 'pool' %}checked{% endif %}>
+          <div id="card_pool" class="relative rounded-xl overflow-hidden border-2 h-28 transition-all
+            {% if object.table_type == 'pool' %}border-green-500 ring-2 ring-green-500/30{% else %}border-gray-700{% endif %}">
+            <div class="absolute inset-0 bg-cover bg-center"
+                 style="background-image: url('/static/img/tables/pool.jpg')"></div>
+            <div class="absolute inset-0 bg-black/50"></div>
+            <div class="absolute inset-0 flex items-end p-2">
+              <span class="text-white text-xs font-bold">Pool</span>
+            </div>
+          </div>
+        </label>
+
+      </div>
     </div>
-    {% endfor %}
-    <button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-2.5 rounded-lg">Guardar</button>
+
+    <!-- Nombre -->
+    <div>
+      <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ form.name.label }}</label>
+      {{ form.name }}
+      {% if form.name.errors %}<p class="text-red-400 text-xs mt-1">{{ form.name.errors|join:", " }}</p>{% endif %}
+    </div>
+
+    <!-- Tarifa -->
+    <div>
+      <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ form.hourly_rate.label }}</label>
+      {{ form.hourly_rate }}
+      {% if form.hourly_rate.errors %}<p class="text-red-400 text-xs mt-1">{{ form.hourly_rate.errors|join:", " }}</p>{% endif %}
+    </div>
+
+    <!-- Descripcion -->
+    <div>
+      <label class="block text-sm font-medium text-gray-400 mb-1.5">{{ form.description.label }}</label>
+      {{ form.description }}
+    </div>
+
+    <!-- Activa -->
+    <div class="flex items-center gap-3">
+      {{ form.is_active }}
+      <label class="text-sm text-gray-400">{{ form.is_active.label }}</label>
+    </div>
+
+    <button type="submit"
+      class="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-2.5 rounded-lg transition-colors">
+      Guardar Mesa
+    </button>
   </form>
 </div>
+
 <script>
-document.querySelectorAll('select,input,textarea').forEach(el=>{
-  el.className='w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500';
+// Escuchar cambios en los radios y actualizar estilos
+document.querySelectorAll('input[name="table_type"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    // Quitar seleccion de todos
+    ['tres_bandas', 'libre', 'pool'].forEach(t => {
+      const card = document.getElementById('card_' + t);
+      card.classList.remove('border-green-500', 'ring-2', 'ring-green-500/30');
+      card.classList.add('border-gray-700');
+    });
+    // Marcar el seleccionado
+    const card = document.getElementById('card_' + this.value);
+    card.classList.add('border-green-500', 'ring-2', 'ring-green-500/30');
+    card.classList.remove('border-gray-700');
+  });
+});
+
+// Estilizar inputs
+document.querySelectorAll('input[type=text], input[type=number], textarea').forEach(el => {
+  el.className = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500';
 });
 </script>
 {% endblock %}

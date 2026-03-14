@@ -35,13 +35,13 @@ class SessionOpenView(WorkerRequiredMixin, CreateView):
             return self.form_invalid(form)
         session.worker = self.request.user
 
-        # Guardar alias en el campo correcto
+        # Si es cliente de paso, guardar alias en notas
         alias = self.request.POST.get('walkup_alias', '').strip()
         if alias and 'de paso' in session.client.name.lower():
-            session.client_alias = alias
+            session.notes = f'[Alias: {alias}]'
 
         session.save()
-        label = f'Cliente de Paso ({alias})' if alias else session.client.name
+        label = f'"{alias}"' if alias else session.client.name
         messages.success(self.request, f'Sesion abierta en {session.table.name} para {label}.')
         return redirect('table_sessions:detail', pk=session.pk)
 
@@ -56,6 +56,12 @@ class SessionDetailView(WorkerRequiredMixin, DetailView):
         ctx['product_form'] = SessionProductForm()
         ctx['products'] = self.object.session_products.select_related('product').all()
         ctx['products_cost'] = self.object.calculate_products_cost()
+
+        # Extraer alias si es cliente de paso
+        alias = ''
+        if self.object.notes and self.object.notes.startswith('[Alias:'):
+            alias = self.object.notes.replace('[Alias:', '').replace(']', '').strip()
+        ctx['walkup_alias'] = alias
         return ctx
 
 

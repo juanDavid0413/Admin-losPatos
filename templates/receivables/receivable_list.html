@@ -33,10 +33,10 @@
         <div class="px-5 py-4 bg-gray-800/40 border-b border-gray-800 flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-full bg-yellow-700/40 flex items-center justify-center text-yellow-300 font-bold text-sm">
-              {{ cd.client.name|first|upper }}
+              {{ cd.display_name|first|upper }}
             </div>
             <div>
-              <p class="font-bold text-white">{{ cd.client.name }}</p>
+              <p class="font-bold text-white">{{ cd.display_name }}</p>
               <p class="text-xs text-gray-500">{{ cd.debts|length }} deuda{% if cd.debts|length != 1 %}s{% endif %} — Total original: ${{ cd.total|floatformat:0 }}</p>
             </div>
           </div>
@@ -116,7 +116,7 @@
 
                   <!-- Boton pagar total con modal de confirmacion -->
                   <button type="button"
-                    onclick="confirmarPagoTotal({{ debt.pk }}, {{ debt.balance|floatformat:0 }}, '{{ cd.client.name|escapejs }}', '{{ debt.notes|escapejs }}')"
+                    onclick="confirmarPagoTotal({{ debt.pk }}, {{ debt.balance|floatformat:0 }}, '{{ cd.display_name|escapejs }}', '{{ debt.notes|escapejs }}')"
                     class="mt-1 w-full text-center text-xs text-yellow-500 hover:text-yellow-300 hover:underline transition-colors">
                     Pagar total (${{ debt.balance|floatformat:0 }})
                   </button>
@@ -189,7 +189,15 @@
         <tbody class="divide-y divide-gray-800">
           {% for r in paid_recently %}
           <tr class="hover:bg-gray-800/20 opacity-75 hover:opacity-100">
-            <td class="px-5 py-3 text-gray-300 font-medium">{{ r.client }}</td>
+            <td class="px-5 py-3 text-gray-300 font-medium">
+              {% if r.table_session and r.table_session.client_alias %}
+                Cliente de Paso ({{ r.table_session.client_alias }})
+              {% elif r.product_account and r.product_account.client_alias %}
+                Cliente de Paso ({{ r.product_account.client_alias }})
+              {% else %}
+                {{ r.client }}
+              {% endif %}
+            </td>
             <td class="px-5 py-3 text-gray-500 text-xs">{{ r.get_source_display }}</td>
             <td class="px-5 py-3 text-gray-500 text-xs">{{ r.created_at|date:"d/m/Y" }}</td>
             <td class="px-5 py-3 text-green-500 text-xs">{{ r.paid_at|date:"d/m/Y H:i" }}</td>

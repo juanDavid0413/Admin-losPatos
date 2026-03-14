@@ -18,41 +18,24 @@ class ReceivableListView(WorkerRequiredMixin, ListView):
 
         pending_qs = Receivable.objects.filter(
             status=Receivable.STATUS_PENDING
-        ).select_related(
-            'client', 'table_session__table', 'product_account'
-        ).order_by('client__name', '-created_at')
+        ).select_related('client', 'table_session__table', 'product_account').order_by('client__name', '-created_at')
 
-        # Agrupar por (client_id + alias) para separar clientes de paso distintos
+        # Agrupar por cliente
         clients_map = {}
         for r in pending_qs:
-            # Obtener alias desde la sesion o cuenta asociada
-            alias = ''
-            if r.table_session:
-                alias = r.table_session.client_alias or ''
-            elif r.product_account:
-                alias = r.product_account.client_alias or ''
-
-            # Clave única: cliente normal → su id, cliente de paso → id + alias
-            if alias:
-                key = f'{r.client_id}__{alias}'
-                display = f'Cliente de Paso ({alias})'
-            else:
-                key = str(r.client_id)
-                display = r.client.name if r.client else '?'
-
-            if key not in clients_map:
-                clients_map[key] = {
+            cid = r.client_id
+            if cid not in clients_map:
+                clients_map[cid] = {
                     'client': r.client,
-                    'display_name': display,
-                    'alias': alias,
                     'debts': [],
                     'total': Decimal('0'),
                     'total_paid': Decimal('0'),
                 }
-            clients_map[key]['debts'].append(r)
-            clients_map[key]['total'] += r.amount
-            clients_map[key]['total_paid'] += r.amount_paid
+            clients_map[cid]['debts'].append(r)
+            clients_map[cid]['total'] += r.amount
+            clients_map[cid]['total_paid'] += r.amount_paid
 
+        # Calcular balance por cliente
         for c in clients_map.values():
             c['balance'] = c['total'] - c['total_paid']
 
@@ -76,32 +59,27 @@ class ReceivableApplyPaymentView(WorkerRequiredMixin, View):
         try:
             if not raw:
                 raise InvalidOperation('empty')
+            # Limpiar separadores: quitar puntos de miles, coma → punto decimal
             if ',' in raw:
                 normalized = raw.replace('.', '').replace(',', '.')
             else:
                 normalized = raw
+            # Redondear siempre a entero
             amount = Decimal(normalized).quantize(Decimal('1'), rounding='ROUND_HALF_UP')
         except InvalidOperation:
-            messages.error(request, 'Ingresa un numero valido (ej: 6420).')
+            messages.error(request, f'Ingresa un numero valido (ej: 6420).')
             return redirect('receivables:list')
 
         try:
             receivable.apply_payment(amount=amount, worker=request.user)
+            # Registrar también en ReceivablePayment para historial
             ReceivablePayment.objects.create(
                 receivable=receivable,
                 amount=amount,
                 worker=request.user,
             )
-            # Nombre para el mensaje
-            alias = ''
-            if receivable.table_session:
-                alias = receivable.table_session.client_alias or ''
-            elif receivable.product_account:
-                alias = receivable.product_account.client_alias or ''
-            name = f'Cliente de Paso ({alias})' if alias else (receivable.client.name if receivable.client else '?')
-
             if receivable.status == Receivable.STATUS_PAID:
-                messages.success(request, f'Deuda de {name} saldada completamente.')
+                messages.success(request, f'Deuda de {receivable.client} saldada completamente.')
             else:
                 messages.success(request, f'Abono de ${amount} registrado. Saldo pendiente: ${receivable.balance}')
         except ValueError as e:
