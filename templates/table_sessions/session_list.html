@@ -41,7 +41,12 @@
             <td class="px-5 py-3 text-gray-400">{{ session.worker.get_full_name|default:session.worker.username }}</td>
             <td class="px-5 py-3 text-gray-400">{{ session.opened_at|date:"d/m/Y H:i" }}</td>
             <td class="px-5 py-3 text-right">
-              <span class="text-green-400 font-mono text-xs font-bold session-timer" data-epoch="{{ session.opened_at|date:'U' }}">00:00:00</span>
+              <span class="font-mono text-xs font-bold session-timer
+                {% if session.is_timer_stopped %}text-red-400{% else %}text-green-400{% endif %}"
+                data-epoch="{{ session.opened_at|date:'U' }}"
+                data-status="{{ session.timer_status }}"
+                data-paused="{{ session.total_paused_seconds|default:0 }}"
+                data-stopped="{% if session.time_stopped_at %}{{ session.time_stopped_at|date:'U' }}{% else %}0{% endif %}">00:00:00</span>
             </td>
             <td class="px-5 py-3 text-right">
               <a href="{% url 'table_sessions:detail' pk=session.pk %}" class="bg-green-700 hover:bg-green-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">Ver →</a>
@@ -108,11 +113,26 @@ function pad(n) { return String(Math.floor(n)).padStart(2,'0'); }
 function tick() {
   const now = Math.floor(Date.now()/1000);
   document.querySelectorAll('.session-timer').forEach(el => {
-    const e = now - parseInt(el.dataset.epoch);
-    if (e < 0) return;
-    el.textContent = pad(e/3600)+':'+pad((e%3600)/60)+':'+pad(e%60);
+    const opened    = parseInt(el.dataset.epoch);
+    const status    = el.dataset.status;
+    const paused    = parseInt(el.dataset.paused) || 0;
+    const stoppedAt = parseInt(el.dataset.stopped) || 0;
+
+    let eff;
+    if (status === 'stopped' && stoppedAt) {
+      // Tiempo detenido — mostrar el tiempo fijo hasta el momento del stop
+      eff = Math.max(0, stoppedAt - opened - paused);
+    } else {
+      // Corriendo — contar en tiempo real
+      eff = Math.max(0, now - opened - paused);
+    }
+    el.textContent = pad(eff/3600)+':'+pad((eff%3600)/60)+':'+pad(eff%60);
   });
 }
-tick(); setInterval(tick, 1000);
+tick();
+// Solo actualizar si hay sesiones corriendo
+if (document.querySelector('.session-timer[data-status="running"]')) {
+  setInterval(tick, 1000);
+}
 </script>
 {% endblock %}

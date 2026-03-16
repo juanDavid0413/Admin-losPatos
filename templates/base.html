@@ -24,7 +24,7 @@
       align-items:center;
       gap:12px;
       width:100%;
-      padding:8px 16px;
+      padding:1px 16px;
       border-radius:8px;
       font-size:14px;
       color:#d1d5db;
@@ -48,14 +48,10 @@
 {% if user.is_authenticated %}
 <!-- Sidebar -->
 <aside class="w-64 min-h-screen bg-gray-900 border-r border-gray-800 flex flex-col shrink-0">
-  <div class="p-5 border-b border-gray-800">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 bg-green-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">🎱</div>
-      <div>
-        <p class="font-bold text-white text-sm leading-tight">Billar Manager</p>
-        <p class="text-xs text-gray-500">Panel de control</p>
-      </div>
-    </div>
+  <div class= "mb-2 mt-2">
+    <video id="sidebarVideo" muted playsinline class="w-full h-auto">
+      <source src="{% static 'img/BillardSoft.mp4' %}" type="video/mp4">
+    </video>
   </div>
 
   <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -104,7 +100,12 @@
       <span>🔐</span> Usuarios
     </a>
     {% endif %}
+
+    
+
+  
   </nav>
+
 
   <div class="p-3 border-t border-gray-800">
     <div class="flex items-center gap-3 px-3 py-2">
@@ -156,7 +157,33 @@
   <div class="flex-1 p-6">
     {% block content %}{% endblock %}
   </div>
+  <footer class="text-center text-xs text-gray-700 py-3 border-t border-gray-800">
+    © 2026 BillarSoft8 by CastApp — Todos los derechos reservados
+  </footer>
 </main>
     {% include 'partials/modal_system.html' %}
+
+<script>
+(function() {
+  const video = document.getElementById('sidebarVideo');
+  if (!video) return;
+  const intervalo = 20; // segundos entre cada reproducción
+
+  function reproducir() {
+    video.currentTime = 0;
+    video.play();
+  }
+
+  // Primera reproducción al cargar
+  reproducir();
+
+  // Cuando termina, esperar el intervalo y volver a reproducir
+  video.addEventListener('ended', function() {
+    setTimeout(reproducir, intervalo * 1000);
+  });
+})();
+</script>
 </body>
+
+
 </html>

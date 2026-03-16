@@ -11,18 +11,18 @@
 {% block content %}
 <!-- Fila 1: Mesas y sesiones -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+  <a href="{% url 'tables:list' %}" class="bg-gray-900 border border-gray-800 hover:border-green-600 rounded-xl p-5 transition-colors">
     <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Mesas libres</p>
     <p class="text-3xl font-bold text-green-400">{{ tables_free }}</p>
-  </div>
-  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+  </a>
+  <a href="{% url 'tables:list' %}" class="bg-gray-900 border border-gray-800 hover:border-yellow-600 rounded-xl p-5 transition-colors">
     <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Mesas ocupadas</p>
     <p class="text-3xl font-bold text-yellow-400">{{ tables_occupied }}</p>
-  </div>
-  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+  </a>
+  <a href="{% url 'table_sessions:list' %}" class="bg-gray-900 border border-gray-800 hover:border-blue-600 rounded-xl p-5 transition-colors">
     <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-1">Sesiones activas</p>
     <p class="text-3xl font-bold text-blue-400">{{ active_sessions }}</p>
-  </div>
+  </a>
   {% if pending_receivables_count > 0 %}
   <a href="{% url 'receivables:list' %}" class="bg-yellow-900/30 border border-yellow-800/60 hover:border-yellow-600 rounded-xl p-5 transition-colors">
     <p class="text-xs text-yellow-500 uppercase tracking-widest font-semibold mb-1">Por cobrar</p>

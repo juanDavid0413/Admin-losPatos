@@ -83,11 +83,16 @@ class TableSession(models.Model):
 
     @property
     def elapsed_minutes(self):
-        if self.closed_at:
+        # Si el tiempo fue detenido manualmente, usar ese momento como fin
+        # independientemente de si la sesion ya fue cerrada o no
+        if self.is_timer_stopped and self.time_stopped_at:
+            end = self.time_stopped_at
+        elif self.closed_at:
             end = self.closed_at
-            total = (end - self.opened_at).total_seconds()
-            return Decimal(max(0, total - self.total_paused_seconds)) / Decimal(60)
-        return Decimal(self.effective_seconds) / Decimal(60)
+        else:
+            end = timezone.now()
+        total = (end - self.opened_at).total_seconds()
+        return Decimal(max(0, total - self.total_paused_seconds)) / Decimal(60)
 
     def calculate_time_cost(self):
         raw = self.table.minute_rate * self.elapsed_minutes
